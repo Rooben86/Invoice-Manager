@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Счета покупателям - МойСклад</title>
+    <style>
+        /* Фирменная палитра МойСклад */
+        body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f2f5f8; margin: 0; padding: 0; color: #333; font-size: 13px; }
+
+        /* Синяя верхняя панель навигации */
+        .navbar { background-color: #2c3e50; color: white; display: flex; align-items: center; padding: 0 20px; height: 45px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .navbar-brand { font-weight: bold; font-size: 15px; margin-right: 30px; letter-spacing: 0.5px; }
+        .nav-item { padding: 0 15px; height: 100%; display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #cbd5e0; }
+        .nav-item.active { background-color: #1a252f; color: white; border-bottom: 3px solid #007bff; box-sizing: border-box; }
+
+        /* Дополнительный под-бар с кнопками действий */
+        .action-bar { background: white; padding: 10px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #dcdfe6; }
+        .page-title { font-size: 18px; font-weight: 600; margin: 0 20px 0 0; color: #1f2d3d; }
+
+        /* Блок серого фильтра под шапкой */
+        .filter-bar { background: #f8fafc; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .filter-group { display: flex; align-items: center; gap: 5px; }
+        .filter-group label { color: #606266; font-weight: 500; }
+
+        /* Стили элементов управления */
+        input, select { padding: 6px 10px; border: 1px solid #dcdfe6; border-radius: 3px; font-size: 13px; background: white; outline: none; }
+        input:focus, select:focus { border-color: #409eff; }
+
+        /* Кнопки в стиле МойСклад */
+        .btn { padding: 6px 14px; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #dcdfe6; background: white; display: inline-flex; align-items: center; text-decoration: none; color: #606266; }
+        .btn-primary { background: #28a745; color: white; border-color: #28a745; }
+        .btn-primary:hover { background: #218838; }
+
+        /* Главный контейнер таблицы */
+        .table-container { background: white; margin: 15px; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f5f7fa; padding: 10px 12px; font-weight: 600; color: #909399; border-bottom: 1px solid #e4e7ed; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #ebeef5; color: #606266; vertical-align: middle; }
+        tr:hover { background-color: #f5f7fa; }
+
+        /* Цветовые маркеры статусов */
+        .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .status-new { background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+        .status-paid { background-color: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    </style>
+</head>
+<body>
+
+<!-- Синий верхний бар -->
+<div class="navbar">
+    <div class="navbar-brand">МойСчет</div>
+    <div class="nav-item">Главная</div>
+    <div class="nav-item active">Продажи</div>
+    <div class="nav-item">Контрагенты</div>
+    <div class="nav-item">Номенклатура</div>
+</div>
+
+<!-- Панель действий -->
+<div class="action-bar">
+    <h2 class="page-title">Счета покупателям</h2>
+    <a th:href="@{/invoice/new}" class="btn btn-primary">+ Счет</a>
+    <button class="btn" onclick="window.location.reload()">Обновить</button>
+</div>
+
+<!-- Панель серого фильтра -->
+<div class="filter-bar">
+    <div class="filter-group">
+        <input type="text" id="searchNumber" placeholder="Номер или комментарий..." style="width: 180px;" oninput="filterInvoices()" />
+    </div>
+    <div class="filter-group">
+        <label>Контрагент:</label>
+        <select id="filterContractor" onchange="filterInvoices()">
+            <option value="">Все контрагенты</option>
+            <option th:each="c : ${contractors}" th:value="${c.name}" th:text="${c.name}"></option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Организация:</label>
+        <select id="filterOrg" onchange="filterInvoices()">
+            <option value="">Все организации</option>
+            <option th:each="o : ${organizations}" th:value="${o.name}" th:text="${o.name}"></option>
+        </select>
+    </div>
+</div>
+<!-- Контейнер с таблицей документов -->
+<div class="table-container">
+    <table id="invoiceTable">
+        <thead>
+        <tr>
+            <th style="width: 12%;">Номер</th>
+            <th style="width: 15%;">Дата и время</th>
+            <th style="width: 20%;">Контрагент</th>
+            <th style="width: 18%;">Организация</th>
+            <th style="width: 12%;">Статус / Оплата</th>
+            <th style="width: 23%;">Комментарий</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Строки счетов генерируются из базы данных PostgreSQL -->
+        <tr th:each="inv : ${invoices}" class="invoice-row">
+            <td>
+                <a th:href="@{'/invoice/edit/' + ${inv.id}}" th:text="${inv.invoiceNumber}" style="color: #007bff; text-decoration: none; font-weight: 600;"></a>
+            </td>
+            <!-- Форматируем LocalDateTime в стандартный понятный вид -->
+            <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy HH:mm')}">01.01.2026 12:00</td>
+            <td class="cell-contractor" th:text="${inv.contractor.name}">ООО Покупатель</td>
+            <td class="cell-org" th:text="${inv.organization.name}">ООО Наша Компания</td>
+            <td>
+                <!-- Если статус содержит слово 'Оплачен', красим в зеленый, иначе в дефолтный синий -->
+                <span th:class="${inv.status != null && inv.status.contains('Оплачен')} ? 'status-badge status-paid' : 'status-badge status-new'"
+                      th:text="${inv.status != null && !inv.status.isEmpty()} ? ${inv.status} : 'Новый'">
+          Новый
+        </span>
+            </td>
+            <td class="cell-comment" th:text="${inv.status}">Внутреннее примечание</td>
+        </tr>
+        <!-- Если в базе вообще нет документов -->
+        <tr th:if="${#lists.isEmpty(invoices)}" id="emptyRow">
+            <td colspan="6" style="text-align: center; color: #909399; padding: 30px;">
+                Счетов пока нет. Нажмите кнопку "+ Счет", чтобы создать первый документ.
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Функция мгновенной фильтрации в стиле МойСклад (без перезагрузки страницы)
+    function filterInvoices() {
+        const searchQuery = document.getElementById("searchNumber").value.toLowerCase().trim();
+        const filterContractor = document.getElementById("filterContractor").value;
+        const filterOrg = document.getElementById("filterOrg").value;
+
+        const rows = document.querySelectorAll(".invoice-row");
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const numberText = row.querySelector("td a").innerText.toLowerCase();
+            const contractorText = row.querySelector(".cell-contractor").innerText;
+            const orgText = row.querySelector(".cell-org").innerText;
+            const commentText = row.querySelector(".cell-comment").innerText.toLowerCase();
+
+            // Проверяем условия поиска по номеру или комментарию
+            const matchesSearch = searchQuery === "" ||
+                numberText.includes(searchQuery) ||
+                commentText.includes(searchQuery);
+
+            // Проверяем точное совпадение выпадающих списков справочников
+            const matchesContractor = filterContractor === "" || contractorText === filterContractor;
+            const matchesOrg = filterOrg === "" || orgText === filterOrg;
+
+            if (matchesSearch && matchesContractor && matchesOrg) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        // Обработка заглушки, если фильтр ничего не нашел
+        const emptyRow = document.getElementById("emptyRow");
+        if (emptyRow) {
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!document.getElementById("filterEmptyNotice")) {
+                    const notice = document.createElement("tr");
+                    notice.id = "filterEmptyNotice";
+                    notice.innerHTML = `<td colspan="6" style="text-align: center; color: #909399; padding: 20px;">По вашему запросу ничего не найдено</td>`;
+                    document.querySelector("#invoiceTable tbody").appendChild(notice);
+                }
+            } else {
+                const notice = document.getElementById("filterEmptyNotice");
+                if (notice) notice.remove();
+            }
+        }
+    }
+</script>
+</body>
+</html>

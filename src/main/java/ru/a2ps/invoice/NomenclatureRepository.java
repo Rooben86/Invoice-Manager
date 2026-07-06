@@ -1,4 +1,8 @@
 package ru.a2ps.invoice;
 
-public interface NomenclatureRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface NomenclatureRepository extends JpaRepository<Nomenclature, Long> {
 }

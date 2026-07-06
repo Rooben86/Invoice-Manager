@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Печатная форма счета</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; font-size: 11px; color: #000; line-height: 1.4; padding: 10px; }
+
+    /* Образец заполнения платежного поручения - точная копия оригинала */
+    .sample-title { text-align: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+    .header-table td { border: 1px solid #000; padding: 5px 7px; vertical-align: top; font-size: 11px; }
+
+    .title { font-size: 16px; font-weight: bold; margin-top: 15px; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+
+    /* Блок Плательщик / Грузополучатель */
+    .party-row { margin-bottom: 10px; width: 100%; display: table; }
+    .party-label { display: table-cell; width: 110px; font-weight: bold; vertical-align: top; }
+    .party-value { display: table-cell; border-bottom: 1px solid #000; padding-bottom: 2px; }
+
+    /* Таблица товаров (колонки в точном порядке оригинала: №, Наименование, Цена, Кол-во, Ед.изм., Сумма) */
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 10px; }
+    .items-table th { background: #fff; border: 1px solid #000; padding: 5px; font-weight: bold; text-align: center; }
+    .items-table td { border: 1px solid #000; padding: 6px; vertical-align: middle; white-space: nowrap; }
+    .cell-left { text-align: left; white-space: normal !important; }
+    .cell-center { text-align: center; }
+    .cell-right { text-align: right; }
+
+    .totals-box { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    .totals-box td { text-align: right; padding: 4px 6px; font-size: 11px; white-space: nowrap; }
+
+    /* Подвал: Реалистичное наложение как на примере */
+    .footer-wrapper { position: relative; margin-top: 50px; width: 100%; height: 160px; }
+    .signature-block { width: 100%; margin-bottom: 35px; position: relative; }
+    .sign-title { display: inline-block; width: 180px; font-weight: bold; }
+    .sign-underline { display: inline-block; width: 160px; border-bottom: 1px solid #000; height: 15px; margin-right: 10px; }
+    .sign-name { display: inline-block; font-weight: bold; }
+
+    /* Точечное позиционирование картинок (Печать смещена на Бухгалтера) */
+    .img-stamp { position: absolute; left: 80px; top: 25px; width: 140px; height: 140px; z-index: 10; }
+    .img-sig-boss { position: absolute; left: 190px; top: -3px; width: 105px; height: 45px; z-index: 5; }
+    .img-sig-book { position: absolute; left: 190px; top: 48px; width: 105px; height: 45px; z-index: 5; }
+  </style>
+</head>
+<body>
+
+<div class="sample-title">Образец заполнения платежного поручения</div>
+
+<!-- Точная копия структуры таблицы реквизитов -->
+<table class="header-table">
+  <tr>
+    <td style="width: 25%;">ИНН <span th:text="${invoice.organization.taxNumber}"></span></td>
+    <td style="width: 25%;">КПП <span th:text="${invoice.organization.kpp}"></span></td>
+    <td rowspan="2" style="width: 10%; vertical-align: middle; text-align: center;">Сч. №</td>
+    <td rowspan="2" style="width: 40%; vertical-align: middle;" th:text="${invoice.organization.checkingAccount}"></td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      Получатель<br/>
+      <span th:text="${invoice.organization.name}"></span>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      Банк получателя<br/>
+      <span th:text="${invoice.organization.bankName}"></span>
+    </td>
+    <td>БИК</td>
+    <td th:text="${invoice.organization.bic}"></td>
+  </tr>
+  <tr>
+    <td colspan="2"></td>
+    <td>Сч. №</td>
+    <td th:text="${invoice.organization.checkingAccount}"></td>
+  </tr>
+</table>
+
+<div class="title">
+  СЧЕТ № <span th:text="${invoice.invoiceNumber.replaceAll('[^0-9]', '')}"></span> от <span th:text="${#temporals.format(invoice.issueDate, 'dd.MM.yyyy')}"></span>
+</div>
+
+<!-- Поля Плательщик и Грузополучатель (Пункт 2) -->
+<div class="party-row">
+  <div class="party-label">Плательщик</div>
+  <div class="party-value"><strong th:text="${invoice.contractor.name}"></strong></div>
+</div>
+<div class="party-row" style="margin-bottom: 25px;">
+  <div class="party-label">Грузополучатель</div>
+  <div class="party-value"><strong th:text="${invoice.contractor.name}"></strong></div>
+</div>
+
+<!-- Порядок колонок как в образце -->
+<table class="items-table">
+  <thead>
+  <tr>
+    <th style="width: 4%;">№</th>
+    <th style="width: 50%;">Наименование товара</th>
+    <th style="width: 12%;">Цена</th>
+    <th style="width: 10%;">Кол-во</th>
+    <th style="width: 10%;">Ед. изм.</th>
+    <th style="width: 14%;">Сумма</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="item, stat : ${invoice.items}">
+    <td class="cell-center" th:text="${stat.count}">1</td>
+    <td class="cell-left" th:text="${item.nomenclature.name}">Товар</td>
+    <td class="cell-right" th:text="${#numbers.formatDecimal(item.price, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity, 1, 'NONE', 0, 'POINT')}">1</td>
+    <td class="cell-center" th:text="${item.nomenclature.unit}">шт</td>
+    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity * item.price, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+  </tr>
+  </tbody>
+</table>
+
+<!-- Итоговый блок с копейками через запятую и без переносов строк -->
+<table class="totals-box">
+  <tr>
+    <td style="width: 85%; font-weight: bold;">Итого:</td>
+    <td style="width: 15%; font-weight: bold;" th:text="${#numbers.formatDecimal(total, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+  </tr>
+  <tr>
+    <td style="font-weight: bold;">В том числе НДС:</td>
+    <td style="font-weight: bold;" th:text="${#numbers.formatDecimal(vat, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+  </tr>
+</table>
+
+<!-- Строка общего итога прописью -->
+<div style="margin-top: 15px; font-size: 11px;">
+  <strong>Итого к оплате:</strong> <span th:text="${totalInWords}">Сумма прописью</span>
+</div>
+
+<!-- Подвал (Пункт 3 & 4) -->
+<div class="footer-wrapper">
+
+  <div class="signature-block">
+    <span class="sign-title">Руководитель организации</span>
+    <span class="sign-underline"></span>
+    <span class="sign-name">( Агарков Денис Валерьевич )</span>
+  </div>
+
+  <div class="signature-block">
+    <span class="sign-title">Главный бухгалтер</span>
+    <span class="sign-underline"></span>
+    <span class="sign-name">( Агарков Денис Валерьевич )</span>
+  </div>
+
+  <!-- Факсимиле накладываются зеркально примеру -->
+  <img class="img-sig-boss" src="static/signature.png" alt="Подпись"/>
+  <img class="img-sig-book" src="static/signature.png" alt="Подпись"/>
+  <img class="img-stamp" src="static/stamp.png" alt="Печать"/>
+</div>
+
+</body>
+</html>
