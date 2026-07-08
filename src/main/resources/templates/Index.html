@@ -2,7 +2,7 @@
 <html xmlns:th="http://thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Счета покупателям - МойСклад</title>
+    <title>Счета покупателям - МойСчёт</title>
     <style>
         /* Фирменная палитра МойСклад */
         body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f2f5f8; margin: 0; padding: 0; color: #333; font-size: 13px; }
@@ -47,12 +47,12 @@
 <body>
 
 <!-- Синий верхний бар -->
-<div class="navbar">
-    <div class="navbar-brand">МойСчет</div>
-    <div class="nav-item">Главная</div>
-    <div class="nav-item active">Продажи</div>
-    <div class="nav-item">Контрагенты</div>
-    <div class="nav-item">Номенклатура</div>
+<div class="navbar-ms" style="background-color: #2c3e50; height: 45px; display: flex; align-items: center; padding: 0 20px; color: white;">
+    <a th:href="@{/}" style="font-weight: bold; font-size: 15px; margin-right: 30px; letter-spacing: 0.5px; color: white; text-decoration: none;">МойСчёт</a>
+    <div style="padding: 0 15px; font-weight: bold; border-bottom: 3px solid #007bff; height: 100%; display: flex; align-items: center; color: white;">Продажи</div>
+    <a th:href="@{/contractors}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; line-height: 45px;">Контрагенты</a>
+    <a th:href="@{/nomenclatures}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; line-height: 45px;">Номенклатура</a>
+    <a th:href="@{/organization/edit}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; margin-left: auto; line-height: 45px;">⚙️ Настройки Поставщика</a>
 </div>
 
 <!-- Панель действий -->

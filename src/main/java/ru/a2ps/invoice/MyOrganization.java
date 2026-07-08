@@ -32,6 +32,15 @@ public class MyOrganization {
     @Column(name = "image_sign_path")
     private String imageSignPath;  // Путь к изображению подписи
 
+    private String stampPath;
+    private String signaturePath;
+    private String corrAccount; // Корреспондентский счет
+    private String address;     // Юридический адрес
+    private String phone;       // Телефон компании
+    private String ceoName;     // ФИО Генерального директора
+    private String cfoName;     // ФИО Главного бухгалтера
+
+
     // Конструктор без параметров (обязателен для JPA)
     public MyOrganization() {
     }
@@ -76,4 +85,21 @@ public class MyOrganization {
 
     public String getImageSignPath() { return imageSignPath; }
     public void setImageSignPath(String imageSignPath) { this.imageSignPath = imageSignPath; }
+
+    public String getStampPath() { return stampPath; }
+    public void setStampPath(String stampPath) { this.stampPath = stampPath; }
+
+    public String getSignaturePath() { return signaturePath; }
+    public void setSignaturePath(String signaturePath) { this.signaturePath = signaturePath; }
+    public String getCorrAccount() { return corrAccount; }
+    public void setCorrAccount(String corrAccount) { this.corrAccount = corrAccount; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getCeoName() { return ceoName; }
+    public void setCeoName(String ceoName) { this.ceoName = ceoName; }
+    public String getCfoName() { return cfoName; }
+    public void setCfoName(String cfoName) { this.cfoName = cfoName; }
+
 }

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"/>
     <title>Редактирование счета - МойСклад</title>
     <style>
         body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f2f5f8; margin: 0; padding: 0; color: #333; font-size: 13px; }
@@ -31,37 +31,52 @@
         .alert-success { background-color: #d4edda; color: #155724; padding: 12px; border-radius: 3px; margin-bottom: 20px; border: 1px solid #c3e6cb; font-weight: 500; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 5000; justify-content: center; align-items: center; }
         .modal-box { background: white; padding: 25px; border-radius: 4px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #dcdfe6; }
+        /* Стили для drag-and-drop в стиле МойСклад */
+        .item-row { transition: background-color 0.2s; }
+        .item-row.dragging { opacity: 0.4; background-color: #f5f7fa; border: 2px dashed #409eff; }
+        .grab-handle {
+            cursor: grab;
+            color: #ccc;
+            font-size: 16px;
+            padding-right: 5px;
+            display: inline-block;
+            user-select: none;
+            visibility: hidden; /* Прячем по умолчанию */
+        }
+        .item-row:hover .grab-handle { visibility: visible; } /* Показываем при наведении на строку */
+        .grab-handle:active { cursor: grabbing; }
+
     </style>
 </head>
 <body>
 
+<!-- Скрытые чистые HTML хранилища списков, которые никогда не вызовут сбой Jackson Serialization -->
+<select id="backupContractors" style="display: none;">
+    <option th:each="c : ${contractors}" th:value="${c.id}" th:text="${c.name}"></option>
+</select>
+<select id="backupNomenclatures" style="display: none;">
+    <option th:each="n : ${nomenclatures}" th:value="${n.id}" th:data-unit="${n.unit}" th:data-price="${n.defaultPrice}" th:text="${n.name}"></option>
+</select>
+
 <div class="navbar-ms">
-    <div style="font-weight: bold; font-size: 15px; margin-right: 30px; letter-spacing: 0.5px;">МойСчет</div>
-    <div style="padding: 0 15px; opacity: 0.7;">Главная</div>
-    <div style="padding: 0 15px; font-weight: bold; border-bottom: 3px solid #007bff; height: 100%; display: flex; align-items: center;">Продажи</div>
-    <div style="padding: 0 15px; opacity: 0.7;">Контрагенты</div>
-    <div style="padding: 0 15px; opacity: 0.7;">Номенклатура</div>
+    <!-- Применяем JS-обработчик клика для отслеживания изменений -->
+    <a href="#" onclick="checkUnsavedChanges(event)" style="font-weight: bold; font-size: 15px; margin-right: 30px; letter-spacing: 0.5px; color: white; text-decoration: none;">МойСчёт</a>
+    <div style="padding: 0 15px; opacity: 0.7; color: white;">Продажи</div>
+    <a href="#" onclick="checkUnsavedChanges(event, '/contractors')" style="color: #cbd5e0; text-decoration: none; padding: 0 15px;">Контрагенты</a>
+    <a href="#" onclick="checkUnsavedChanges(event, '/nomenclatures')" style="color: #cbd5e0; text-decoration: none; padding: 0 15px;">Номенклатура</a>
 </div>
 
 <div class="form-container">
     <h2>Редактирование счета № <span th:text="${invoice.invoiceNumber}"></span></h2>
-
     <div class="alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
 
     <form th:action="@{/invoice/update-saved}" method="POST" id="invoiceForm">
         <input type="hidden" name="invoiceId" th:value="${invoice.id}" />
 
         <div class="form-row">
-            <div class="form-group" style="flex: 1;">
-                <label>Номер счета:</label>
-                <input type="text" name="invoiceNumber" th:value="${invoice.invoiceNumber}" required />
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Дата счета:</label>
-                <input type="date" id="issueDate" name="issueDate" th:value="${#temporals.format(invoice.issueDate, 'yyyy-MM-dd')}" required />
-            </div>
+            <div class="form-group" style="flex: 1;"><label>Номер счета:</label><input type="text" name="invoiceNumber" th:value="${invoice.invoiceNumber}" required /></div>
+            <div class="form-group" style="flex: 1;"><label>Дата счета:</label><input type="date" id="issueDate" name="issueDate" th:value="${#temporals.format(invoice.issueDate, 'yyyy-MM-dd')}" required /></div>
         </div>
-
         <div class="form-row">
             <div class="form-group" style="flex: 1;">
                 <label>Организация (Поставщик):</label>
@@ -71,11 +86,12 @@
             </div>
             <div class="form-group" style="flex: 1;">
                 <label>Контрагент (Покупатель):</label>
-                <input type="text" id="contractorSearch" th:value="${invoice.contractor.name}" autocomplete="off" required style="width: 100%;" />
-                <input type="hidden" name="contractorId" id="hiddenContractorId" th:value="${invoice.contractor.id}" required />
+                <input type="text" id="contractorSearch" th:value="${invoice.contractor != null} ? ${invoice.contractor.name} : ''" autocomplete="off" required style="width: 100%;" />
+                <input type="hidden" name="contractorId" id="hiddenContractorId" th:value="${invoice.contractor != null} ? ${invoice.contractor.id} : ''" required />
                 <div class="dropdown-options" id="contractorDropdown"></div>
             </div>
         </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 10px;">
             <h3 style="font-size: 15px; font-weight: 600; margin: 0; color: #1f2d3d;">Товарные позиции</h3>
             <button type="button" class="btn btn-secondary" style="color: #007bff; border-color: #007bff;" onclick="addNewRow()">+ Добавить позицию</button>
@@ -92,17 +108,20 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="item : ${invoice.items}">
-                <td class="row-number" style="vertical-align: middle; font-weight: bold; color: #909399;"></td>
+            <tr th:each="item : ${invoice.items}" class="item-row">
+                <td class="row-number" style="vertical-align: middle; font-weight: bold; color: #909399; white-space: nowrap;">
+                    <span class="grab-handle">⋮⋮</span><span class="num-text"></span>
+                </td>
+
                 <td>
                     <div style="position: relative;">
-                        <input type="text" class="row-search" th:value="${item.nomenclature.name}" placeholder="Начните вводить название товара..." autocomplete="off" required style="width:100%;" />
-                        <input type="hidden" name="nomenclatureIds" th:value="${item.nomenclature.id}" />
+                        <input type="text" class="row-search" th:value="${item.nomenclature != null} ? ${item.nomenclature.name} : 'Товар не выбран'" placeholder="Начните вводить название товара..." autocomplete="off" required style="width:100%;" />
+                        <input type="hidden" name="nomenclatureIds" th:value="${item.nomenclature != null} ? ${item.nomenclature.id} : ''" />
                         <div class="dropdown-options nominal-drop"></div>
                     </div>
                 </td>
-                <td><input type="number" step="0.01" name="quantities" th:value="${item.quantity}" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
-                <td><input type="number" step="0.01" name="prices" th:value="${item.price}" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
+                <td><input type="number" step="0.01" name="quantities" th:value="${item.quantity != null} ? ${item.quantity} : '1.00'" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
+                <td><input type="number" step="0.01" name="prices" th:value="${item.price != null} ? ${item.price} : '0.00'" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
                 <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">X</button></td>
             </tr>
             </tbody>
@@ -115,14 +134,13 @@
 
         <div class="form-group" style="margin-top: 20px;">
             <label>Комментарий к счету:</label>
-            <textarea name="commentary" rows="3" placeholder="Введите внутреннее примечание к счету..." th:text="${invoice.status}"></textarea>
+            <textarea name="commentary" rows="3" placeholder="Введите примечание..." th:text="${invoice.status}"></textarea>
         </div>
 
         <div class="btn-group">
             <a th:href="@{/}" class="btn btn-secondary">Закрыть</a>
             <div>
-                <a th:href="@{/invoice/export/excel/{id}(id=${invoice.id})}" class="btn" style="background-color: #28a745; color: white; border-color: #28a745;">Скачать Excel</a>
-                <a th:href="@{/invoice/export/pdf/{id}(id=${invoice.id})}" class="btn" style="background-color: #dc3545; color: white; border-color: #dc3545;">Скачать PDF</a>
+                <a th:href="@{/invoice/export/pdf/{id}(id=${invoice.id})}" target="_blank" class="btn" style="background-color: #dc3545; color: white; border-color: #dc3545;">Скачать PDF</a>
                 <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Сохранить изменения</button>
             </div>
         </div>
@@ -132,14 +150,13 @@
 <div id="contractorModal" class="modal-overlay">
     <div class="modal-box">
         <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px;">Новый Контрагент</h3>
-        <div class="form-group">
-            <label>Наименование контрагента:</label>
-            <input type="text" id="modalContrName" style="width:100%;" />
-        </div>
-        <div class="form-group" style="margin-top: 10px;">
-            <label>ИНН контрагента:</label>
-            <input type="text" id="modalContrTax" placeholder="Например: 7810234567" style="width:100%;" />
-        </div>
+        <div class="form-group"><label>Наименование:</label><input type="text" id="modalContrName" style="width:100%;" /></div>
+        <div class="form-group" style="margin-top: 10px;"><label>ИНН:</label><input type="text" id="modalContrTax" placeholder="7810234567" style="width:100%;" /></div>
+
+        <!-- Новые поля ввода -->
+        <div class="form-group" style="margin-top: 10px;"><label>КПП (или ОГРНИП для ИП):</label><input type="text" id="modalContrKpp" placeholder="781001001" style="width:100%;" /></div>
+        <div class="form-group" style="margin-top: 10px;"><label>Юридический адрес:</label><input type="text" id="modalContrAddress" placeholder="г. Санкт-Петербург, ул. Ленина, д. 5" style="width:100%;" /></div>
+
         <div style="margin-top: 20px; display: flex; justify-content: space-between;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('contractorModal')">Отмена</button>
             <button type="button" class="btn btn-success" onclick="submitQuickContractor()">Создать</button>
@@ -150,33 +167,42 @@
 <div id="nomenclatureModal" class="modal-overlay">
     <div class="modal-box">
         <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px;">Новая позиция каталога</h3>
-        <div class="form-group">
-            <label>Наименование товара / услуги:</label>
-            <input type="text" id="modalNomName" style="width:100%;" />
-        </div>
-        <div class="form-group" style="margin-top: 10px;">
-            <label>Единица измерения:</label>
-            <select id="modalNomUnit" style="width:100%;" onchange="toggleCustomUnit(this)">
-                <option value="шт">шт (Штука)</option>
-                <option value="куб.м">куб.м (Кубический метр)</option>
-                <option value="лист">лист (Лист)</option>
-                <option value="кг">кг (Килограмм)</option>
-                <option value="CUSTOM">+ Другая ед. изм...</option>
-            </select>
-        </div>
-        <div class="form-group" id="customUnitWrapper" style="margin-top: 10px; display: none;">
-            <label>Введите свою единицу измерения:</label>
-            <input type="text" id="modalCustomUnit" placeholder="Например: уп" style="width:100%;" />
-        </div>
-        <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('nomenclatureModal')">Отмена</button>
-            <button type="button" class="btn btn-success" onclick="submitQuickNomenclature()">Внести в базу</button>
-        </div>
+        <div class="form-group"><label>Наименование:</label><input type="text" id="modalNomName" style="width:100%;" /></div>
+        <div class="form-group" style="margin-top: 10px;"><label>Ед. изм.:</label><select id="modalNomUnit" style="width:100%;" onchange="toggleCustomUnit(this)"><option value="шт">шт</option><option value="м2">м2</option>
+            <option value="куб.м">куб.м</option><option value="лист">лист</option><option value="кг">кг</option><option value="рулон">рулон</option><option value="упак">рулон</option>
+            <option value="CUSTOM">+ Своя...</option></select></div>
+        <div class="form-group" id="customUnitWrapper" style="margin-top: 10px; display: none;"><label>Введите ед. изм.:</label><input type="text" id="modalCustomUnit" placeholder="уп" style="width:100%;" /></div>
+        <div style="margin-top: 20px; display: flex; justify-content: space-between;"><button type="button" class="btn btn-secondary" onclick="closeModal('nomenclatureModal')">Отмена</button><button type="button" class="btn btn-success" onclick="submitQuickNomenclature()">Внести</button></div>
     </div>
 </div>
-<script th:inline="javascript">
-    let contractors = [[${contractors}]];
-    let nomenclatureList = [[${nomenclatures}]];
+<script>
+    // Флаг, указывающий на наличие изменений на форме
+    let isFormChanged = false;
+
+    // Вешаем слушатели на любые изменения полей формы после загрузки страницы
+    window.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById("invoiceForm");
+        if (form) {
+            form.querySelectorAll("input, select, textarea").forEach(element => {
+                element.addEventListener("change", () => { isFormChanged = true; });
+                element.addEventListener("input", () => { isFormChanged = true; });
+            });
+        }
+    });
+
+    // Функция контроля ухода со страницы
+    function checkUnsavedChanges(event, targetUrl = '/') {
+        if (isFormChanged) {
+            const confirmLeave = confirm("Внимание! У вас есть несохраненные изменения в счете. Вы уверены, что хотите покинуть страницу без сохранения?");
+            if (!confirmLeave) {
+                event.preventDefault();
+                return false;
+            }
+        }
+        // Если изменений нет или пользователь согласен их потерять — перенаправляем по адресу
+        window.location.href = targetUrl;
+    }
+
     let activeNomTargetInput = null;
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -187,19 +213,22 @@
     });
 
     function reindexRows() {
-        const rows = document.querySelectorAll("#itemsTable tbody tr");
-        rows.forEach((row, index) => {
-            row.querySelector(".row-number").innerText = index + 1;
+        document.querySelectorAll(".item-row").forEach((row, index) => {
+            const numText = row.querySelector(".num-text");
+            if (numText) numText.innerText = index + 1;
         });
     }
 
     function calculateLiveTotals() {
         let grandTotal = 0;
-        const rows = document.querySelectorAll("#itemsTable tbody tr");
-        rows.forEach(row => {
-            const qty = parseFloat(row.querySelector("input[name='quantities']").value) || 0;
-            const price = parseFloat(row.querySelector("input[name='prices']").value) || 0;
-            grandTotal += (qty * price);
+        document.querySelectorAll(".item-row").forEach(row => {
+            const qtyInput = row.querySelector("input[name='quantities']");
+            const priceInput = row.querySelector("input[name='prices']");
+            if (qtyInput && priceInput) {
+                let qtyStr = qtyInput.value.replace(',', '.');
+                let priceStr = priceInput.value.replace(',', '.');
+                grandTotal += ((parseFloat(qtyStr) || 0) * (parseFloat(priceStr) || 0));
+            }
         });
         let vatTotal = grandTotal * 22 / 122;
         document.getElementById("liveGrandTotal").innerText = grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
@@ -207,13 +236,13 @@
     }
 
     function addNewRow() {
-        const tbody = document.querySelector("#itemsTable tbody");
         const row = document.createElement("tr");
+        row.className = "item-row";
         row.innerHTML = `
       <td class="row-number" style="vertical-align: middle; font-weight: bold; color: #909399;"></td>
       <td>
         <div style="position: relative;">
-          <input type="text" class="row-search" placeholder="Начните вводить название товара..." autocomplete="off" required style="width:100%;" />
+          <input type="text" class="row-search" placeholder="Поиск товара..." autocomplete="off" required style="width:100%;" />
           <input type="hidden" name="nomenclatureIds" />
           <div class="dropdown-options rounded nominal-drop"></div>
         </div>
@@ -222,17 +251,15 @@
       <td><input type="number" step="0.01" name="prices" value="0.00" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
       <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">X</button></td>
     `;
-        tbody.appendChild(row);
+        document.querySelector("#itemsTable tbody").appendChild(row);
         reindexRows();
         bindNomenclatureEvents();
+        initDragAndDrop();
     }
 
     function removeRow(btn) {
-        const rows = document.querySelectorAll("#itemsTable tbody tr");
-        if (rows.length > 1) {
-            btn.closest("tr").remove();
-            reindexRows();
-            calculateLiveTotals();
+        if (document.querySelectorAll(".item-row").length > 1) {
+            btn.closest("tr").remove(); reindexRows(); calculateLiveTotals();
         }
     }
 
@@ -241,21 +268,21 @@
         const dropdown = document.getElementById("contractorDropdown");
         input.addEventListener("input", () => {
             const val = input.value.toLowerCase(); dropdown.innerHTML = "";
-            let matches = contractors.filter(c => c.name.toLowerCase().includes(val));
-            matches.forEach(c => {
-                const div = document.createElement("div"); div.innerText = c.name;
-                div.onclick = () => { input.value = c.name; document.getElementById("hiddenContractorId").value = c.id; dropdown.style.display = "none"; };
-                dropdown.appendChild(div);
+            document.querySelectorAll("#backupContractors option").forEach(opt => {
+                if (opt.text.toLowerCase().includes(val)) {
+                    const div = document.createElement("div"); div.innerText = opt.text;
+                    div.onclick = () => { input.value = opt.text; document.getElementById("hiddenContractorId").value = opt.value; dropdown.style.display = "none"; };
+                    dropdown.appendChild(div);
+                }
             });
             if (val.trim() !== "") {
                 const addDiv = document.createElement("div"); addDiv.className = "quick-add-opt";
-                addDiv.innerText = `+ Добавить нового контрагента: "${input.value}"`;
+                addDiv.innerText = `+ Добавить контрагента: "${input.value}"`;
                 addDiv.onclick = () => { document.getElementById("modalContrName").value = input.value; document.getElementById("contractorModal").style.display = "flex"; dropdown.style.display = "none"; };
                 dropdown.appendChild(addDiv);
             }
             dropdown.style.display = dropdown.children.length ? "block" : "none";
         });
-        document.addEventListener("click", (e) => { if (e.target !== input) dropdown.style.display = "none"; });
     }
 
     function bindNomenclatureEvents() {
@@ -264,15 +291,16 @@
             const dropdown = input.nextElementSibling.nextElementSibling;
             input.addEventListener("input", () => {
                 const val = input.value.toLowerCase(); dropdown.innerHTML = "";
-                let matches = nomenclatureList.filter(n => n.name.toLowerCase().includes(val));
-                matches.forEach(n => {
-                    const div = document.createElement("div"); div.innerText = `${n.name} (${n.unit})`;
-                    div.onclick = () => { input.value = n.name; input.nextElementSibling.value = n.id; input.closest("tr").querySelector("input[name='prices']").value = n.defaultPrice.toFixed(2); dropdown.style.display = "none"; calculateLiveTotals(); };
-                    dropdown.appendChild(div);
+                document.querySelectorAll("#backupNomenclatures option").forEach(opt => {
+                    if (opt.text.toLowerCase().includes(val)) {
+                        const div = document.createElement("div"); div.innerText = `${opt.text} (${opt.dataset.unit})`;
+                        div.onclick = () => { input.value = opt.text; input.nextElementSibling.value = opt.value; input.closest("tr").querySelector("input[name='prices']").value = parseFloat(opt.dataset.price).toFixed(2); dropdown.style.display = "none"; calculateLiveTotals(); };
+                        dropdown.appendChild(div);
+                    }
                 });
                 if (val.trim() !== "") {
                     const addDiv = document.createElement("div"); addDiv.className = "quick-add-opt";
-                    addDiv.innerText = `+ Создать новую номенклатуру: "${input.value}"`;
+                    addDiv.innerText = `+ Создать номенклатуру: "${input.value}"`;
                     addDiv.onclick = () => { activeNomTargetInput = input; document.getElementById("modalNomName").value = input.value; document.getElementById("nomenclatureModal").style.display = "flex"; dropdown.style.display = "none"; };
                     dropdown.appendChild(addDiv);
                 }
@@ -288,19 +316,30 @@
     function submitQuickContractor() {
         const name = document.getElementById("modalContrName").value;
         const tax = document.getElementById("modalContrTax").value || "—";
+        const kpp = document.getElementById("modalContrKpp").value || "—";
+        const addr = document.getElementById("modalContrAddress").value || "Не указан";
         if(!name) return;
+
         fetch('/contractors/quick-add', {
-            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'name': name, 'taxNumber': tax })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ 'name': name, 'taxNumber': tax, 'kppOrOgrnip': kpp, 'address': addr })
         }).then(res => res.json()).then(data => {
             if(data.status === 'success') {
-                contractors.push({ id: data.id, name: data.name });
+                const newOpt = document.createElement("option");
+                newOpt.value = data.id;
+                newOpt.text = data.name;
+                document.getElementById("backupContractors").appendChild(newOpt);
                 document.getElementById("contractorSearch").value = data.name;
                 document.getElementById("hiddenContractorId").value = data.id;
                 closeModal('contractorModal');
+                // Очищаем поля формы
+                document.getElementById("modalContrKpp").value = "";
+                document.getElementById("modalContrAddress").value = "";
             }
         });
     }
+
 
     function submitQuickNomenclature() {
         const name = document.getElementById("modalNomName").value;
@@ -312,11 +351,74 @@
             body: new URLSearchParams({ 'name': name, 'unit': unit })
         }).then(res => res.json()).then(data => {
             if(data.status === 'success') {
-                nomenclatureList.push({ id: data.id, name: data.name, unit: data.unit, defaultPrice: 0.00 });
+                const newOpt = document.createElement("option"); newOpt.value = data.id; newOpt.text = data.name; newOpt.dataset.unit = data.unit; newOpt.dataset.price = "0.00"; document.getElementById("backupNomenclatures").appendChild(newOpt);
                 if (activeNomTargetInput) { activeNomTargetInput.value = data.name; activeNomTargetInput.nextElementSibling.value = data.id; activeNomTargetInput.closest("tr").querySelector("input[name='prices']").value = "0.00"; }
                 closeModal('nomenclatureModal'); select.value = "шт"; document.getElementById("customUnitWrapper").style.display = "none"; document.getElementById("modalCustomUnit").value = ""; calculateLiveTotals();
             }
         });
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        // ... ваш старый код инициализации (addNewRow, и т.д.) остается
+        initDragAndDrop();
+    });
+
+    function initDragAndDrop() {
+        const tbody = document.querySelector("#itemsTable tbody");
+        const rows = tbody.querySelectorAll(".item-row");
+
+        rows.forEach(row => {
+            const handle = row.querySelector(".grab-handle");
+
+            if (handle) {
+                // Когда мышка нажимает на точки — разрешаем строке тащиться
+                handle.addEventListener("mousedown", () => {
+                    row.setAttribute("draggable", "true");
+                });
+
+                // Как только отпустили мышку или увели с точек — отключаем перетаскивание
+                handle.addEventListener("mouseup", () => {
+                    row.removeAttribute("draggable");
+                });
+            }
+
+            row.addEventListener("dragstart", (e) => {
+                row.classList.add("dragging");
+            });
+
+            row.addEventListener("dragend", () => {
+                row.classList.remove("dragging");
+                row.removeAttribute("draggable"); // Чистим атрибут после сброса
+                reindexRows();
+            });
+        });
+
+        tbody.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const draggingRow = tbody.querySelector(".dragging");
+            if (!draggingRow) return;
+
+            const afterElement = getDragAfterElement(tbody, e.clientY);
+            if (afterElement == null) {
+                tbody.appendChild(draggingRow);
+            } else {
+                tbody.insertBefore(draggingRow, afterElement);
+            }
+        });
+    }
+
+    // Вспомогательная функция для расчета геометрии строк при движении мыши
+    function getDragAfterElement(tbody, y) {
+        const draggableElements = [...tbody.querySelectorAll(".item-row:not(.dragging)")];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 </script>
 </body>

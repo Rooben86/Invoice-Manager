@@ -16,6 +16,8 @@ public class Contractor {
     @Column(name = "tax_number", nullable = false)
     private String taxNumber; // ИНН
 
+    private String kppOrOgrnip;
+
     private String address;
 
     // Конструктор без параметров
@@ -23,11 +25,13 @@ public class Contractor {
     }
 
     // Полный конструктор
-    public Contractor(String name, String taxNumber, String address) {
+    public Contractor(String name, String taxNumber, String address, String kppOrOgrnip) {
         this.name = name;
         this.taxNumber = taxNumber;
         this.address = address;
+        this.kppOrOgrnip = kppOrOgrnip;
     }
+
 
     // Геттеры и сеттеры
     public Long getId() { return id; }
@@ -41,4 +45,7 @@ public class Contractor {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getKppOrOgrnip() { return kppOrOgrnip; }
+    public void setKppOrOgrnip(String kppOrOgrnip) { this.kppOrOgrnip = kppOrOgrnip; }
 }

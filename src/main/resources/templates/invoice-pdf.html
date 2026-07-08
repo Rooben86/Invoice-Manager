@@ -29,17 +29,67 @@
     .totals-box { width: 100%; border-collapse: collapse; margin-top: 5px; }
     .totals-box td { text-align: right; padding: 4px 6px; font-size: 11px; white-space: nowrap; }
 
-    /* Подвал: Реалистичное наложение как на примере */
-    .footer-wrapper { position: relative; margin-top: 50px; width: 100%; height: 160px; }
-    .signature-block { width: 100%; margin-bottom: 35px; position: relative; }
-    .sign-title { display: inline-block; width: 180px; font-weight: bold; }
-    .sign-underline { display: inline-block; width: 160px; border-bottom: 1px solid #000; height: 15px; margin-right: 10px; }
-    .sign-name { display: inline-block; font-weight: bold; }
+         /* Подвал: Позиционирование подписей и увеличенной печати */
+     .footer-wrapper {
+       position: relative;
+       margin-top: 30px;
+       width: 100%;
+       height: 110px;
+     }
+    .signature-block {
+      width: 100%;
+      margin-bottom: 35px;
+      position: relative;
+    }
+    .sign-title {
+      display: inline-block;
+      width: 180px;
+      font-weight: bold;
+    }
+    .sign-underline {
+      display: inline-block;
+      width: 160px;
+      border-bottom: 1px solid #000;
+      height: 15px;
+      margin-right: 10px;
+    }
+    .sign-name {
+      display: inline-block;
+      font-weight: bold;
+    }
 
-    /* Точечное позиционирование картинок (Печать смещена на Бухгалтера) */
-    .img-stamp { position: absolute; left: 80px; top: 25px; width: 140px; height: 140px; z-index: 10; }
-    .img-sig-boss { position: absolute; left: 190px; top: -3px; width: 105px; height: 45px; z-index: 5; }
-    .img-sig-book { position: absolute; left: 190px; top: 48px; width: 105px; height: 45px; z-index: 5; }
+    /* Точечное позиционирование картинок */
+    /* Печать увеличена на 20% (с 161px до 193px) */
+    /* Печать: смещена влево на 5% и приподнята вверх на 15% для экономии места на А4 */
+    .img-stamp {
+      position: absolute;
+      left: 30px;       /* Было 60px (сдвинули влево) */
+      top: -30px;       /* Было 5px (приподняли вверх над строкой бухгалтера) */
+      width: 193px;
+      height: 193px;
+      z-index: 10;
+    }
+
+    /* Подпись руководителя: приподнята выше и выровнена по левому краю линии (left: 180px) */
+    .img-sig-boss {
+      position: absolute;
+      left: 180px;
+      top: -22px;
+      width: 105px;
+      height: 45px;
+      z-index: 5;
+    }
+
+    /* Подпись бухгалтера: приподнята выше и выровнена по левому краю линии (left: 180px) */
+    .img-sig-book {
+      position: absolute;
+      left: 180px;
+      top: 28px;
+      width: 105px;
+      height: 45px;
+      z-index: 5;
+    }
+
   </style>
 </head>
 <body>
@@ -71,7 +121,8 @@
   <tr>
     <td colspan="2"></td>
     <td>Сч. №</td>
-    <td th:text="${invoice.organization.checkingAccount}"></td>
+    <!-- ПУНКТ 1: Теперь здесь выводится реальный к/с банка из базы данных -->
+    <td th:text="${invoice.organization.corrAccount}"></td>
   </tr>
 </table>
 
@@ -80,13 +131,34 @@
 </div>
 
 <!-- Поля Плательщик и Грузополучатель (Пункт 2) -->
+<!-- 1. Реквизиты Поставщика: ИНН, КПП и адрес вашей организации -->
 <div class="party-row">
-  <div class="party-label">Плательщик</div>
-  <div class="party-value"><strong th:text="${invoice.contractor.name}"></strong></div>
+  <div class="party-label">Поставщик</div>
+  <div class="party-value">
+    <strong th:text="${invoice.organization.name}"></strong>,
+    ИНН: <span th:text="${invoice.organization.taxNumber}"></span>,
+    КПП: <span th:text="${invoice.organization.kpp}"></span>,
+    <!-- ПУНКТ 2: Динамический адрес и телефон вашей компании -->
+    Юр. адрес: <span th:text="${invoice.organization.address}"></span>,
+    тел.: <span th:text="${invoice.organization.phone}"></span>
+  </div>
 </div>
+
+<!-- 2. Реквизиты Покупателя: Автоматическое переключение ИНН + КПП или ИНН + ОГРНИП -->
+<!-- Динамический вывод КПП/ОГРНИП и Адреса покупателя без статичных заглушек -->
+<!-- Реквизиты Покупателя: Полностью динамический вывод без заглушек -->
 <div class="party-row" style="margin-bottom: 25px;">
-  <div class="party-label">Грузополучатель</div>
-  <div class="party-value"><strong th:text="${invoice.contractor.name}"></strong></div>
+  <div class="party-label">Покупатель</div>
+  <div class="party-value">
+    <strong th:text="${invoice.contractor.name}"></strong>,
+    ИНН: <span th:text="${invoice.contractor.taxNumber}"></span>,
+
+    <!-- Если ИП — пишем ОГРНИП, если ООО — КПП и подставляем реальное значение из базы -->
+    <span th:text="${invoice.contractor.name.startsWith('ИП')} ? 'ОГРНИП: ' : 'КПП: '"></span>
+    <span th:text="${invoice.contractor.kppOrOgrnip != null} ? ${invoice.contractor.kppOrOgrnip} : '—'"></span>,
+
+    Юр. адрес: <span th:text="${invoice.contractor.address}"></span>
+  </div>
 </div>
 
 <!-- Порядок колонок как в образце -->
@@ -105,10 +177,10 @@
   <tr th:each="item, stat : ${invoice.items}">
     <td class="cell-center" th:text="${stat.count}">1</td>
     <td class="cell-left" th:text="${item.nomenclature.name}">Товар</td>
-    <td class="cell-right" th:text="${#numbers.formatDecimal(item.price, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+    <td class="cell-right" th:text="${#numbers.formatDecimal(item.price, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
     <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity, 1, 'NONE', 0, 'POINT')}">1</td>
     <td class="cell-center" th:text="${item.nomenclature.unit}">шт</td>
-    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity * item.price, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity * item.price, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
   </tr>
   </tbody>
 </table>
@@ -117,11 +189,12 @@
 <table class="totals-box">
   <tr>
     <td style="width: 85%; font-weight: bold;">Итого:</td>
-    <td style="width: 15%; font-weight: bold;" th:text="${#numbers.formatDecimal(total, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+    <!-- Подключаем пробельный разделитель тысяч WHITESPACE -->
+    <td style="width: 15%; font-weight: bold;" th:text="${#numbers.formatDecimal(total, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
   </tr>
   <tr>
     <td style="font-weight: bold;">В том числе НДС:</td>
-    <td style="font-weight: bold;" th:text="${#numbers.formatDecimal(vat, 1, 'NONE', 2, 'COMMA')}">0,00</td>
+    <td style="font-weight: bold;" th:text="${#numbers.formatDecimal(vat, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
   </tr>
 </table>
 
@@ -131,24 +204,24 @@
 </div>
 
 <!-- Подвал (Пункт 3 & 4) -->
+<!-- Подвал: Стабильные теги для Flying Saucer -->
 <div class="footer-wrapper">
-
   <div class="signature-block">
     <span class="sign-title">Руководитель организации</span>
     <span class="sign-underline"></span>
-    <span class="sign-name">( Агарков Денис Валерьевич )</span>
+    <span class="sign-name">( <span th:text="${invoice.organization.ceoName}"></span> )</span>
   </div>
 
   <div class="signature-block">
     <span class="sign-title">Главный бухгалтер</span>
     <span class="sign-underline"></span>
-    <span class="sign-name">( Агарков Денис Валерьевич )</span>
+    <span class="sign-name">( <span th:text="${invoice.organization.cfoName}"></span> )</span>
   </div>
 
-  <!-- Факсимиле накладываются зеркально примеру -->
-  <img class="img-sig-boss" src="static/signature.png" alt="Подпись"/>
-  <img class="img-sig-book" src="static/signature.png" alt="Подпись"/>
-  <img class="img-stamp" src="static/stamp.png" alt="Печать"/>
+  <!-- Указываем фиксированные имена для перехвата в Java бэкенде -->
+  <img class="img-sig-boss" src="boss-sig" alt="Подпись"/>
+  <img class="img-sig-book" src="book-sig" alt="Подпись"/>
+  <img class="img-stamp" src="org-stamp" alt="Печать"/>
 </div>
 
 </body>

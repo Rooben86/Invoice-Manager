@@ -5,7 +5,7 @@ public class NumberToWordsRu {
     private static final String[] units = {
             "", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять",
             "десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать",
-            "шестнадцать", "семьнадцать", "восемьнадцать", "девятнадцать"
+            "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"
     };
 
     private static final String[] unitsFem = {
@@ -25,20 +25,35 @@ public class NumberToWordsRu {
 
         StringBuilder sb = new StringBuilder();
 
-        long thousandsVal = (number / 1000) % 1000;
+        long billions = (number / 1000000000L) % 1000;
+        long millions = (number / 1000000L) % 1000;
+        long thousands = (number / 1000L) % 1000;
         long unitsVal = number % 1000;
 
-        if (thousandsVal > 0) {
-            sb.append(convertThreeDigits(thousandsVal, true)).append(" ");
-            sb.append(getThousandsDeclension(thousandsVal)).append(" ");
+        // 1. Обработка класса миллиардов
+        if (billions > 0) {
+            sb.append(convertThreeDigits(billions, false)).append(" ");
+            sb.append(getDeclension(billions, "миллиард", "миллиарда", "миллиардов")).append(" ");
         }
 
+        // 2. Обработка класса миллионов (ФИКС ОШИБКИ)
+        if (millions > 0) {
+            sb.append(convertThreeDigits(millions, false)).append(" ");
+            sb.append(getDeclension(millions, "миллион", "миллиона", "миллионов")).append(" ");
+        }
+
+        // 3. Обработка класса тысяч
+        if (thousands > 0) {
+            sb.append(convertThreeDigits(thousands, true)).append(" ");
+            sb.append(getDeclension(thousands, "тысяча", "тысячи", "тысяч")).append(" ");
+        }
+
+        // 4. Обработка единиц
         if (unitsVal > 0 || sb.length() == 0) {
             sb.append(convertThreeDigits(unitsVal, false));
         }
 
         String result = sb.toString().trim();
-        // Делаем первую букву заглавной
         return result.substring(0, 1).toUpperCase() + result.substring(1);
     }
 
@@ -63,20 +78,16 @@ public class NumberToWordsRu {
     }
 
     public static String getRublesDeclension(long rubles) {
-        long lastDigit = rubles % 10;
-        long lastTwoDigits = rubles % 100;
-        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return "рублей";
-        if (lastDigit == 1) return "рубль";
-        if (lastDigit >= 2 && lastDigit <= 4) return "рубля";
-        return "рублей";
+        return getDeclension(rubles, "рубль", "рубля", "рублей");
     }
 
-    private static String getThousandsDeclension(long thousands) {
-        long lastDigit = thousands % 10;
-        long lastTwoDigits = thousands % 100;
-        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return "тысяч";
-        if (lastDigit == 1) return "тысяча";
-        if (lastDigit >= 2 && lastDigit <= 4) return "тысячи";
-        return "тысяч";
+    // Универсальный метод склонения существительных после числительных
+    private static String getDeclension(long n, String form1, String form2, String form5) {
+        long lastDigit = n % 10;
+        long lastTwoDigits = n % 100;
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return form5;
+        if (lastDigit == 1) return form1;
+        if (lastDigit >= 2 && lastDigit <= 4) return form2;
+        return form5;
     }
 }
