@@ -44,19 +44,35 @@ public class InvoiceController {
             nomenclatureRepository.save(n3);
 
             Invoice testInvoice = new Invoice("СЧ-0001", java.time.LocalDateTime.now(), org, c1, "Новый");
+            testInvoice.setTotalAmount(new java.math.BigDecimal("1250.00"));
             invoiceRepository.save(testInvoice);
         }
-
-        // Сортируем: сначала по дате по убыванию (от новых к старым), затем по номеру счета
-//        model.addAttribute("invoices", invoiceRepository.findAllSortedByDateAndNumberDesc(
-//                org.springframework.data.domain.Sort.by(
-//                        org.springframework.data.domain.Sort.Order.desc("issueDate"),
-//                        org.springframework.data.domain.Sort.Order.desc("invoiceNumber")
-//                )
-//        ));
         model.addAttribute("invoices", invoiceRepository.findAllSortedByDateAndNumberDesc());
         model.addAttribute("contractors", contractorRepository.findAll());
-        model.addAttribute("organizations", organizationRepository.findAll());
+
+        // Безопасный расчет сумм счетов для вывода на главную страницу
+        java.util.Map<Long, java.math.BigDecimal> invoiceTotals = new java.util.HashMap<>();
+        if (model.containsAttribute("invoices")) {
+            java.util.List<Invoice> currentInvoices = (java.util.List<Invoice>) model.getAttribute("invoices");
+            if (currentInvoices != null) {
+                for (Invoice inv : currentInvoices) {
+                    if (inv != null) {
+                        java.math.BigDecimal sum = java.math.BigDecimal.ZERO;
+                        // Принудительно инициализируем элементы счета, чтобы обойти проблему LAZY-нулей
+                        if (inv.getItems() != null) {
+                            for (InvoiceItem item : inv.getItems()) {
+                                if (item != null && item.getQuantity() != null && item.getPrice() != null) {
+                                    sum = sum.add(item.getQuantity().multiply(item.getPrice()));
+                                }
+                            }
+                        }
+                        invoiceTotals.put(inv.getId(), sum);
+                    }
+                }
+            }
+        }
+        model.addAttribute("invoiceTotals", invoiceTotals);
+
         return "index";
     }
 
@@ -102,6 +118,16 @@ public class InvoiceController {
             }
             invoiceRepository.save(savedInvoice);
         }
+
+        // Авторасчет общей суммы для сохранения в колонку
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        for (InvoiceItem item : savedInvoice.getItems()) {
+            if (item.getQuantity() != null && item.getPrice() != null) {
+                total = total.add(item.getQuantity().multiply(item.getPrice()));
+            }
+        }
+        savedInvoice.setTotalAmount(total);
+        invoiceRepository.save(savedInvoice);
 
         return "redirect:/invoice/edit/" + savedInvoice.getId();
     }
@@ -151,6 +177,15 @@ public class InvoiceController {
                 invoice.getItems().add(item);
             }
         }
+
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        for (InvoiceItem item : invoice.getItems()) {
+            if (item.getQuantity() != null && item.getPrice() != null) {
+                total = total.add(item.getQuantity().multiply(item.getPrice()));
+            }
+        }
+        invoice.setTotalAmount(total);
+
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
         model.addAttribute("invoice", savedInvoice);

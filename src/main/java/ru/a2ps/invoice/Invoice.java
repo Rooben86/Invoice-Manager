@@ -29,6 +29,8 @@ public class Invoice {
 
     private String status;
 
+    private java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InvoiceItem> items = new ArrayList<>();
 
@@ -56,4 +58,7 @@ public class Invoice {
     public void setStatus(String status) { this.status = status; }
     public List<InvoiceItem> getItems() { return items; }
     public void setItems(List<InvoiceItem> items) { this.items = items; }
+
+    public java.math.BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(java.math.BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 }
