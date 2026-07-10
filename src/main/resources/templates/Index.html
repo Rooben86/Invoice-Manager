@@ -88,9 +88,9 @@
         <thead>
         <tr>
             <th style="width: 12%;">Номер</th>
-            <th style="width: 15%;">Дата</th>
+            <th style="width: 15%;">Дата и время</th>
             <th style="width: 20%;">Контрагент</th>
-            <th style="width: 18%;">Сумма</th>
+            <th style="width: 18%;">Организация</th>
             <th style="width: 12%;">Статус / Оплата</th>
             <th style="width: 23%;">Комментарий</th>
         </tr>
@@ -102,12 +102,9 @@
                 <a th:href="@{'/invoice/edit/' + ${inv.id}}" th:text="${inv.invoiceNumber}" style="color: #007bff; text-decoration: none; font-weight: 600;"></a>
             </td>
             <!-- Форматируем LocalDateTime в стандартный понятный вид -->
-            <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy')}">01.01.2026</td>
+            <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy HH:mm')}">01.01.2026 12:00</td>
             <td class="cell-contractor" th:text="${inv.contractor.name}">ООО Покупатель</td>
-            <!-- Пункт 4: Отображение суммы счета с защитой от пустых объектов в цикле таблицы -->
-            <td>
-                <strong th:text="${i != null && invoiceTotals != null && invoiceTotals.get(i.id) != null} ? (${#numbers.formatDecimal(invoiceTotals.get(i.id), 1, 'WHITESPACE', 2, 'COMMA')} + ' руб.') : '0,00 руб.'">0,00 руб.</strong>
-            </td>
+            <td class="cell-org" th:text="${inv.organization.name}">ООО Наша Компания</td>
             <td>
                 <!-- Если статус содержит слово 'Оплачен', красим в зеленый, иначе в дефолтный синий -->
                 <span th:class="${inv.status != null && inv.status.contains('Оплачен')} ? 'status-badge status-paid' : 'status-badge status-new'"
