@@ -100,7 +100,7 @@
             <th style="width: 12%;">Номер</th>
             <th style="width: 12%;">Дата</th>
             <th style="width: 20%;">Контрагент</th>
-            <th style="width: 18%;">Организация</th>
+            <th style="width: 18%;">Сумма счёта</th>
             <th style="width: 12%;">Дата отгрузки</th>
             <th style="width: 23%;">Комментарий</th>
         </tr>
@@ -114,7 +114,9 @@
             <!-- Форматируем LocalDateTime в стандартный понятный вид -->
             <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy')}">01.01.2026</td>
             <td class="cell-contractor" th:text="${inv.contractor.name}">ООО Покупатель</td>
-            <td class="cell-org" th:text="${inv.organization.name}">ООО Наша Компания</td>
+            <td style="font-weight: bold; color: #2c3e50;">
+                <span th:text="${inv.calculateInvoiceTotal() != null ? #numbers.formatDecimal(inv.calculateInvoiceTotal(), 1, 'WHITESPACE', 2, 'POINT') + ' руб.' : '0.00 руб.'}">0.00 руб.</span>
+            </td>
             <td>
                 <input type="date"
                        th:value="${inv?.shipmentDate}"

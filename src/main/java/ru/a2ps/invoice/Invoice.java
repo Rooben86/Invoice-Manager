@@ -33,7 +33,7 @@ public class Invoice {
     @Column(name = "status")
     private String commentary;
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<InvoiceItem> items = new ArrayList<>();
 
     public Invoice() {}
@@ -62,4 +62,17 @@ public class Invoice {
     public void setItems(List<InvoiceItem> items) { this.items = items; }
     public String getCommentary() { return commentary; }
     public void setCommentary(String commentary) { this.commentary = commentary; }
+
+    public java.math.BigDecimal calculateInvoiceTotal() {
+        if (this.items == null || this.items.isEmpty()) {
+            return java.math.BigDecimal.ZERO;
+        }
+        return this.items.stream()
+                .map(item -> {
+                    java.math.BigDecimal price = item.getPrice() != null ? item.getPrice() : java.math.BigDecimal.ZERO;
+                    java.math.BigDecimal qty = item.getQuantity() != null ? item.getQuantity() : java.math.BigDecimal.ZERO;
+                    return price.multiply(qty);
+                })
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+    }
 }
