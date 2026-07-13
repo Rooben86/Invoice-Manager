@@ -134,7 +134,7 @@
 
         <div class="form-group" style="margin-top: 20px;">
             <label>Комментарий к счету:</label>
-            <textarea name="commentary" rows="3" placeholder="Введите примечание..." th:text="${invoice.status}"></textarea>
+            <textarea name="commentary" rows="3" placeholder="Введите примечание..." th:text="${invoice?.commentary}"></textarea>
         </div>
 
         <div class="btn-group">

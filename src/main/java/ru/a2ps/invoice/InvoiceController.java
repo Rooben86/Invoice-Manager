@@ -87,7 +87,7 @@ public class InvoiceController {
         invoice.setIssueDate(java.time.LocalDate.parse(issueDate).atStartOfDay());
         invoice.setOrganization(organizationRepository.findById(organizationId).orElseThrow());
         invoice.setContractor(contractorRepository.findById(contractorId).orElseThrow());
-        invoice.setStatus(commentary);
+        invoice.setCommentary(commentary);
 
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
@@ -138,7 +138,7 @@ public class InvoiceController {
         invoice.setIssueDate(java.time.LocalDate.parse(issueDate).atStartOfDay());
         invoice.setOrganization(organizationRepository.findById(organizationId).orElseThrow());
         invoice.setContractor(contractorRepository.findById(contractorId).orElseThrow());
-        invoice.setStatus(commentary);
+        invoice.setCommentary(commentary);
 
         invoice.getItems().clear();
         if (nomenclatureIds != null) {
@@ -406,5 +406,22 @@ public class InvoiceController {
         return "redirect:/nomenclatures";
     }
 
+    @GetMapping("/invoice/update-shipment-date") // Изменили POST на GET
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<String> updateShipmentDate(@RequestParam Long invoiceId,
+                                                                              @RequestParam String shipmentDate) {
+        try {
+            Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
+            if (shipmentDate == null || shipmentDate.trim().isEmpty()) {
+                invoice.setShipmentDate(null);
+            } else {
+                invoice.setShipmentDate(java.time.LocalDate.parse(shipmentDate));
+            }
+            invoiceRepository.save(invoice);
+            return org.springframework.http.ResponseEntity.ok("Дата успешно обновлена");
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.status(500).body("Ошибка: " + e.getMessage());
+        }
+    }
 }
 

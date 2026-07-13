@@ -42,6 +42,16 @@
         .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; display: inline-block; }
         .status-new { background-color: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
         .status-paid { background-color: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+         /* Стиль для инпута, у которого выбрана дата */
+         .date-filled {
+             background-color: #e2f0d9 !important; /* Светло-зеленый оттенок */
+             border-color: #a9d08e !important;     /* Мягкая зеленая рамка */
+             color: #385723 !important;            /* Темно-зеленый цвет текста */
+         }
+        /* Плавный переход смены цвета при клике */
+        .form-control-sm {
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -88,10 +98,10 @@
         <thead>
         <tr>
             <th style="width: 12%;">Номер</th>
-            <th style="width: 15%;">Дата и время</th>
+            <th style="width: 12%;">Дата</th>
             <th style="width: 20%;">Контрагент</th>
             <th style="width: 18%;">Организация</th>
-            <th style="width: 12%;">Статус / Оплата</th>
+            <th style="width: 12%;">Дата отгрузки</th>
             <th style="width: 23%;">Комментарий</th>
         </tr>
         </thead>
@@ -102,17 +112,19 @@
                 <a th:href="@{'/invoice/edit/' + ${inv.id}}" th:text="${inv.invoiceNumber}" style="color: #007bff; text-decoration: none; font-weight: 600;"></a>
             </td>
             <!-- Форматируем LocalDateTime в стандартный понятный вид -->
-            <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy HH:mm')}">01.01.2026 12:00</td>
+            <td th:text="${#temporals.format(inv.issueDate, 'dd.MM.yyyy')}">01.01.2026</td>
             <td class="cell-contractor" th:text="${inv.contractor.name}">ООО Покупатель</td>
             <td class="cell-org" th:text="${inv.organization.name}">ООО Наша Компания</td>
             <td>
-                <!-- Если статус содержит слово 'Оплачен', красим в зеленый, иначе в дефолтный синий -->
-                <span th:class="${inv.status != null && inv.status.contains('Оплачен')} ? 'status-badge status-paid' : 'status-badge status-new'"
-                      th:text="${inv.status != null && !inv.status.isEmpty()} ? ${inv.status} : 'Новый'">
-          Новый
-        </span>
+                <input type="date"
+                       th:value="${inv?.shipmentDate}"
+                       th:data-invoice-id="${inv?.id}"
+                       onchange="updateShipmentDate(this)"
+                       th:classappend="${inv?.shipmentDate != null} ? 'date-filled' : ''"
+                       class="form-control form-control-sm" style="width: 140px; display: inline-block;" />
             </td>
-            <td class="cell-comment" th:text="${inv.status}">Внутреннее примечание</td>
+            <td class="cell-comment" th:text="${inv?.commentary}">Текст комментария</td>
+
         </tr>
         <!-- Если в базе вообще нет документов -->
         <tr th:if="${#lists.isEmpty(invoices)}" id="emptyRow">
@@ -172,6 +184,37 @@
                 if (notice) notice.remove();
             }
         }
+    }
+    function updateShipmentDate(inputElement) {
+        const invoiceId = inputElement.getAttribute('data-invoice-id');
+        const newDate = inputElement.value;
+
+        // Если ID не определился или равен строке "null", блокируем отправку
+        if (!invoiceId || invoiceId === "null" || invoiceId === "undefined") {
+            console.error("Ошибка: ID счета равен null. Проверьте th:data-invoice-id в шаблоне.");
+            return;
+        }
+
+        // МГНОВЕННОЕ ИЗМЕНЕНИЕ ЦВЕТА НА ФРОНТЕНДЕ:
+        // Если дата выбрана — добавляем зеленый класс, если стерта — убираем
+        if (newDate) {
+            inputElement.classList.add('date-filled');
+        } else {
+            inputElement.classList.remove('date-filled');
+        }
+
+        fetch(`/invoice/update-shipment-date?invoiceId=${invoiceId}&shipmentDate=${newDate}`, {
+            method: 'GET'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    alert('Не удалось сохранить дату отгрузки');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при сохранении');
+            });
     }
 </script>
 </body>

@@ -27,7 +27,11 @@ public class Invoice {
     @JoinColumn(name = "contractor_id", nullable = false)
     private Contractor contractor;
 
-    private String status;
+    @Column(name = "shipment_date")
+    private java.time.LocalDate shipmentDate;
+
+    @Column(name = "status")
+    private String commentary;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InvoiceItem> items = new ArrayList<>();
@@ -39,7 +43,7 @@ public class Invoice {
         this.issueDate = issueDate;
         this.organization = organization;
         this.contractor = contractor;
-        this.status = status;
+        this.shipmentDate = shipmentDate;
     }
 
     public Long getId() { return id; }
@@ -52,8 +56,10 @@ public class Invoice {
     public void setOrganization(MyOrganization organization) { this.organization = organization; }
     public Contractor getContractor() { return contractor; }
     public void setContractor(Contractor contractor) { this.contractor = contractor; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public java.time.LocalDate getShipmentDate() { return shipmentDate; }
+    public void setShipmentDate(java.time.LocalDate shipmentDate) { this.shipmentDate = shipmentDate; }
     public List<InvoiceItem> getItems() { return items; }
     public void setItems(List<InvoiceItem> items) { this.items = items; }
+    public String getCommentary() { return commentary; }
+    public void setCommentary(String commentary) { this.commentary = commentary; }
 }
