@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -25,39 +26,39 @@ public class InvoiceController {
     }
 
     @GetMapping("/")
-    public String viewDashboard(Model model) {
-        if (organizationRepository.count() == 0) {
-            MyOrganization org = new MyOrganization("ООО \"Альфа-Плюс\"", "7701234567", "770101001",
-                    "ПАО СБЕРБАНК", "40702810900000001234", "044525225", "static/stamp.png", "static/signature.png");
-            organizationRepository.save(org);
+    public String viewDashboard(@RequestParam(value = "searchNom", required = false) String searchNom,
+                                @RequestParam(value = "contractorId", required = false) Long contractorId,
+                                Model model) {
 
-            Contractor c1 = new Contractor("ООО \"СтройТрейд\"", "7810998877", "", "г. Санкт-Петербург, ул. Ленина, д. 5");
-            Contractor c2 = new Contractor("ИП Иванов И.И.", "503211223344", "", "г. Москва, ул. Тверская, д. 12");
-            contractorRepository.save(c1);
-            contractorRepository.save(c2);
+        // Вызываем обновленный метод поиска по тексту
+        List<Invoice> invoices = invoiceRepository.findFilteredInvoices(searchNom, contractorId);
 
-            Nomenclature n1 = new Nomenclature("Фанера ФК 15мм 1525х1525", "лист", new java.math.BigDecimal("1250.00"));
-            Nomenclature n2 = new Nomenclature("Доска обрезная 50х150х6000", "куб.м", new java.math.BigDecimal("18500.00"));
-            Nomenclature n3 = new Nomenclature("Саморезы по дереву 3.5х41", "кг", new java.math.BigDecimal("450.00"));
-            nomenclatureRepository.save(n1);
-            nomenclatureRepository.save(n2);
-            nomenclatureRepository.save(n3);
-
-            Invoice testInvoice = new Invoice("СЧ-0001", java.time.LocalDateTime.now(), org, c1, "Новый");
-            invoiceRepository.save(testInvoice);
-        }
-
-        // Сортируем: сначала по дате по убыванию (от новых к старым), затем по номеру счета
-//        model.addAttribute("invoices", invoiceRepository.findAllSortedByDateAndNumberDesc(
-//                org.springframework.data.domain.Sort.by(
-//                        org.springframework.data.domain.Sort.Order.desc("issueDate"),
-//                        org.springframework.data.domain.Sort.Order.desc("invoiceNumber")
-//                )
-//        ));
-        model.addAttribute("invoices", invoiceRepository.findAllSortedByDateAndNumberDesc());
+        model.addAttribute("invoices", invoices);
+        model.addAttribute("currentSearchNom", searchNom); // Передаем текст обратно в инпут
+        model.addAttribute("currentContractorId", contractorId);
         model.addAttribute("contractors", contractorRepository.findAll());
         model.addAttribute("organizations", organizationRepository.findAll());
+
         return "index";
+    }
+
+    // Метод для отдачи списка подсказок номенклатур в формате JSON
+    @GetMapping("/api/nomenclatures/search")
+    @ResponseBody
+    public List<Map<String, Object>> searchNomenclatures(@RequestParam("term") String term) {
+        if (term == null || term.trim().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        return nomenclatureRepository.findAll().stream()
+                .filter(n -> n.getName() != null && n.getName().toLowerCase().contains(term.toLowerCase()))
+                .map(n -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", n.getId());
+                    map.put("name", n.getName());
+                    return map;
+                })
+                .toList(); // Метод соберет совпадения и вернет JSON-массив для JavaScript
     }
 
     @GetMapping("/invoice/new")

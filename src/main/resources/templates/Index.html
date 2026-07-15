@@ -75,14 +75,43 @@
 <!-- Панель серого фильтра -->
 <div class="filter-bar">
     <div class="filter-group">
-        <input type="text" id="searchNumber" placeholder="Номер или комментарий..." style="width: 180px;" oninput="filterInvoices()" />
-    </div>
-    <div class="filter-group">
-        <label>Контрагент:</label>
-        <select id="filterContractor" onchange="filterInvoices()">
-            <option value="">Все контрагенты</option>
-            <option th:each="c : ${contractors}" th:value="${c.name}" th:text="${c.name}"></option>
-        </select>
+        <!-- Панель фильтров с расширенным полем поиска товаров -->
+        <form th:action="@{/}" method="get" id="filterForm" class="mb-3" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 15px !important; font-size: 13px; color: #333; width: auto; background: transparent;">
+
+            <!-- 1. Расширенный фильтр по Номенклатуре -->
+            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important; position: relative;">
+                <span style="white-space: nowrap; color: #606266 !important;">Поиск по позиции:</span>
+                <input type="text"
+                       id="nomSearchInput"
+                       name="searchNom"
+                       th:value="${currentSearchNom}"
+                       placeholder="Введите наименование товара..."
+                       autocomplete="off"
+                       style="height: 26px !important; width: 320px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important; display: inline-block !important; margin: 0 !important;" />
+
+                <!-- Выпадающие подсказки (Ширина автоматически подстроилась под инпут) -->
+                <div id="nomSuggestions" style="position: absolute; left: 125px; top: 100%; width: 320px; z-index: 9999; background: white; border: 1px solid #dcdfe6; border-radius: 4px; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
+            </div>
+
+            <!-- 2. Фильтр по Контрагенту -->
+            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important;">
+                <span style="white-space: nowrap; color: #606266 !important;">Контрагент:</span>
+                <select name="contractorId" id="contractorSelect" onchange="document.getElementById('filterForm').submit()" style="height: 26px !important; width: 160px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important; display: inline-block !important; background-color: #fff !important; margin: 0 !important; appearance: select; -webkit-appearance: select;">
+                    <option value="">Все контрагенты</option>
+                    <option th:each="c : ${contractors}"
+                            th:value="${c.id}"
+                            th:text="${c.name}"
+                            th:selected="${c.id == currentContractorId}"></option>
+                </select>
+            </div>
+
+            <!-- 3. Кнопка Сбросить -->
+            <a th:href="@{/}" style="height: 26px !important; padding: 2px 10px !important; font-size: 12px !important; background-color: #fff !important; border: 1px solid #ccc !important; color: #606266 !important; border-radius: 3px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 1px 1px rgba(0,0,0,.075) !important; white-space: nowrap !important; margin: 0 !important; cursor: pointer;">
+                Сбросить
+            </a>
+        </form>
+
+
     </div>
     <div class="filter-group">
         <label>Организация:</label>
@@ -139,54 +168,6 @@
 </div>
 
 <script>
-    // Функция мгновенной фильтрации в стиле МойСклад (без перезагрузки страницы)
-    function filterInvoices() {
-        const searchQuery = document.getElementById("searchNumber").value.toLowerCase().trim();
-        const filterContractor = document.getElementById("filterContractor").value;
-        const filterOrg = document.getElementById("filterOrg").value;
-
-        const rows = document.querySelectorAll(".invoice-row");
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            const numberText = row.querySelector("td a").innerText.toLowerCase();
-            const contractorText = row.querySelector(".cell-contractor").innerText;
-            const orgText = row.querySelector(".cell-org").innerText;
-            const commentText = row.querySelector(".cell-comment").innerText.toLowerCase();
-
-            // Проверяем условия поиска по номеру или комментарию
-            const matchesSearch = searchQuery === "" ||
-                numberText.includes(searchQuery) ||
-                commentText.includes(searchQuery);
-
-            // Проверяем точное совпадение выпадающих списков справочников
-            const matchesContractor = filterContractor === "" || contractorText === filterContractor;
-            const matchesOrg = filterOrg === "" || orgText === filterOrg;
-
-            if (matchesSearch && matchesContractor && matchesOrg) {
-                row.style.display = "";
-                visibleCount++;
-            } else {
-                row.style.display = "none";
-            }
-        });
-
-        // Обработка заглушки, если фильтр ничего не нашел
-        const emptyRow = document.getElementById("emptyRow");
-        if (emptyRow) {
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!document.getElementById("filterEmptyNotice")) {
-                    const notice = document.createElement("tr");
-                    notice.id = "filterEmptyNotice";
-                    notice.innerHTML = `<td colspan="6" style="text-align: center; color: #909399; padding: 20px;">По вашему запросу ничего не найдено</td>`;
-                    document.querySelector("#invoiceTable tbody").appendChild(notice);
-                }
-            } else {
-                const notice = document.getElementById("filterEmptyNotice");
-                if (notice) notice.remove();
-            }
-        }
-    }
     function updateShipmentDate(inputElement) {
         const invoiceId = inputElement.getAttribute('data-invoice-id');
         const newDate = inputElement.value;
@@ -218,6 +199,69 @@
                 alert('Произошла ошибка при сохранении');
             });
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('nomSearchInput');
+        const dropdown = document.getElementById('nomSuggestions');
+        const form = document.getElementById('filterForm');
+
+        if (!input || !dropdown) return;
+
+        input.addEventListener('input', () => {
+        const query = input.value.trim();
+
+        if (query.length < 2) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+        // ВАЖНО: Добавлен ведущий слэш '/' для обращения к корню API сервера
+        fetch('/api/nomenclatures/search?term=' + encodeURIComponent(query))
+        .then(res => {
+        if (!res.ok) throw new Error('Ошибка сервера: ' + res.status);
+        return res.json();
+    })
+        .then(data => {
+        dropdown.innerHTML = '';
+
+        if (!data || data.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+        data.forEach(item => {
+        const row = document.createElement('div');
+        row.innerText = item.name;
+        row.style.padding = '10px 12px';
+        row.style.cursor = 'pointer';
+        row.style.fontSize = '13px';
+        row.style.borderBottom = '1px solid #f2f6fc';
+        row.style.color = '#303133';
+
+        row.onmouseenter = () => row.style.backgroundColor = '#ecf5ff';
+        row.onmouseleave = () => row.style.backgroundColor = 'transparent';
+
+        row.onclick = () => {
+        input.value = item.name;
+        dropdown.style.display = 'none';
+        if (form) form.submit();
+    };
+
+        dropdown.appendChild(row);
+    });
+
+        // Принудительно делаем блок видимым поверх остальных элементов
+        dropdown.style.display = 'block';
+    })
+        .catch(err => console.error('Ошибка загрузки подсказок:', err));
+    });
+
+        document.addEventListener('click', (e) => {
+        if (e.target !== input) {
+        dropdown.style.display = 'none';
+    }
+    });
+    });
 </script>
 </body>
 </html>
