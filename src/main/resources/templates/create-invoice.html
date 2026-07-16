@@ -98,9 +98,10 @@
       <tr>
         <th style="width: 5%;">#</th>
         <th style="width: 50%;">Товар / Услуга</th>
-        <th style="width: 15%;">Количество</th>
-        <th style="width: 20%;">Цена с НДС 22%</th>
-        <th style="width: 10%;">Удалить</th>
+        <th style="width: 13%;">Количество</th>
+        <th style="width: 13%;">Цена с НДС 22%</th>
+        <th style="width: 14%;">Сумма</th>
+        <th style="width: 5%;">Удалить</th>
       </tr>
       </thead>
       <tbody>
@@ -210,19 +211,34 @@
 
   function calculateLiveTotals() {
     let grandTotal = 0;
+
     document.querySelectorAll(".item-row").forEach(row => {
+      // Находим инпуты количества и цены внутри текущей строки
       const qtyInput = row.querySelector("input[name='quantities']");
       const priceInput = row.querySelector("input[name='prices']");
+      const rowTotalSpan = row.querySelector(".row-total span");
+
       if (qtyInput && priceInput) {
-        let qtyStr = qtyInput.value.replace(',', '.');
-        let priceStr = priceInput.value.replace(',', '.');
-        grandTotal += ((parseFloat(qtyStr) || 0) * (parseFloat(priceStr) || 0));
+        let qty = parseFloat(qtyInput.value.replace(',', '.')) || 0;
+        let price = parseFloat(priceInput.value.replace(',', '.')) || 0;
+        let rowSum = qty * price;
+
+        // Накапливаем общий итог по счету
+        grandTotal += rowSum;
+
+        // МГНОВЕННО ОБНОВЛЯЕМ СУММУ СТРОКИ НА ЭКРАНЕ
+        if (rowTotalSpan) {
+          rowTotalSpan.innerText = rowSum.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
+        }
       }
     });
+
+    // Пересчет общего итога внизу счета (ваш старый код остается без изменений)
     let vatTotal = grandTotal * 22 / 122;
     document.getElementById("liveGrandTotal").innerText = grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
     document.getElementById("liveVatTotal").innerText = vatTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
   }
+
 
   function addNewRow() {
     const row = document.createElement("tr");
@@ -241,6 +257,10 @@
       </td>
       <td><input type="number" step="0.01" name="quantities" value="1.00" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
       <td><input type="number" step="0.01" name="prices" value="0.00" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
+      <!-- ДОБАВЛЯЕМ СЮДА ЯЧЕЙКУ СУММЫ ДЛЯ НОВОЙ СТРОКИ -->
+      <td class="row-total" style="vertical-align: middle; font-weight: bold; color: #303133; text-align: right; padding-right: 15px;">
+          <span>0.00 руб.</span>
+      </td>
       <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">X</button></td>
     `;
     document.querySelector("#itemsTable tbody").appendChild(row);
