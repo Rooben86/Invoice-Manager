@@ -278,46 +278,190 @@
   function initContractorSearch() {
     const input = document.getElementById("contractorSearch");
     const dropdown = document.getElementById("contractorDropdown");
+    let currentFocus = -1; // Переменная для отслеживания текущей позиции
+
     input.addEventListener("input", () => {
-      const val = input.value.toLowerCase(); dropdown.innerHTML = "";
+      currentFocus = -1; // Сбрасываем фокус при каждом изменении ввода
+      const val = input.value.toLowerCase();
+      dropdown.innerHTML = "";
+
       document.querySelectorAll("#backupContractors option").forEach(opt => {
         if (opt.text.toLowerCase().includes(val)) {
-          const div = document.createElement("div"); div.innerText = opt.text;
-          div.onclick = () => { input.value = opt.text; document.getElementById("hiddenContractorId").value = opt.value; dropdown.style.display = "none"; };
+          const div = document.createElement("div");
+          div.innerText = opt.text;
+
+          // ДОБАВЛЯЕМ КЛАССЫ: для идентификации элементов при нажатии стрелок
+          div.className = "contractor-item-row";
+
+          div.onclick = () => {
+            input.value = opt.text;
+            document.getElementById("hiddenContractorId").value = opt.value;
+            dropdown.style.display = "none";
+          };
+
+          // Подсвечиваем элемент мышкой синхронно с клавиатурой
+          div.onmouseenter = () => {
+            resetContractorFocus(dropdown.querySelectorAll(".contractor-item-row"));
+            div.style.backgroundColor = "#ecf5ff";
+          };
+
           dropdown.appendChild(div);
         }
       });
+
       if (val.trim() !== "") {
-        const addDiv = document.createElement("div"); addDiv.className = "quick-add-opt";
+        const addDiv = document.createElement("div");
+        addDiv.className = "quick-add-opt contractor-item-row"; // Тоже даем класс, чтобы стрелка могла дойти до кнопки добавления
         addDiv.innerText = `+ Добавить контрагента: "${input.value}"`;
-        addDiv.onclick = () => { document.getElementById("modalContrName").value = input.value; document.getElementById("contractorModal").style.display = "flex"; dropdown.style.display = "none"; };
+        addDiv.onclick = () => {
+          document.getElementById("modalContrName").value = input.value;
+          document.getElementById("contractorModal").style.display = "flex";
+          dropdown.style.display = "none";
+        };
+
+        addDiv.onmouseenter = () => {
+          resetContractorFocus(dropdown.querySelectorAll(".contractor-item-row"));
+          addDiv.style.backgroundColor = "#ecf5ff";
+        };
+
         dropdown.appendChild(addDiv);
       }
+
       dropdown.style.display = dropdown.children.length ? "block" : "none";
     });
+
+    // Внедряем обработку клавиатуры (Вверх, Вниз, Enter)
+    input.addEventListener("keydown", (e) => {
+      let items = dropdown.querySelectorAll(".contractor-item-row");
+      if (!items.length) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        currentFocus++;
+        setContractorActive(items);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        currentFocus--;
+        setContractorActive(items);
+      } else if (e.key === "Enter") {
+        if (currentFocus > -1 && items[currentFocus]) {
+          e.preventDefault(); // Запрещаем отправку формы по Enter
+          items[currentFocus].click(); // Программный клик выполнит оригинальный div.onclick
+        }
+      }
+    });
+
+    function setContractorActive(items) {
+      resetContractorFocus(items);
+      if (currentFocus >= items.length) currentFocus = 0;
+      if (currentFocus < 0) currentFocus = items.length - 1;
+
+      items[currentFocus].style.backgroundColor = "#ecf5ff";
+      // Умный скролл: удерживает выбранный элемент в зоне видимости выпадающего окна
+      items[currentFocus].scrollIntoView({ block: "nearest" });
+    }
+
+    function resetContractorFocus(items) {
+      items.forEach(item => item.style.backgroundColor = "transparent");
+    }
   }
 
   function bindNomenclatureEvents() {
     document.querySelectorAll(".row-search").forEach(input => {
-      if (input.dataset.bound) return; input.dataset.bound = "true";
+      if (input.dataset.bound) return;
+      input.dataset.bound = "true";
+
       const dropdown = input.nextElementSibling.nextElementSibling;
+      let currentFocus = -1; // Локальный фокус строго привязан к текущему инпуту
+
       input.addEventListener("input", () => {
-        const val = input.value.toLowerCase(); dropdown.innerHTML = "";
+        currentFocus = -1; // Сбрасываем фокус при изменении текста
+        const val = input.value.toLowerCase();
+        dropdown.innerHTML = "";
+
         document.querySelectorAll("#backupNomenclatures option").forEach(opt => {
           if (opt.text.toLowerCase().includes(val)) {
-            const div = document.createElement("div"); div.innerText = `${opt.text} (${opt.dataset.unit})`;
-            div.onclick = () => { input.value = opt.text; input.nextElementSibling.value = opt.value; input.closest("tr").querySelector("input[name='prices']").value = parseFloat(opt.dataset.price).toFixed(2); dropdown.style.display = "none"; calculateLiveTotals(); };
+            const div = document.createElement("div");
+            div.innerText = `${opt.text} (${opt.dataset.unit})`;
+
+            // НАШ КЛАСС: для навигации стрелками
+            div.className = "nomenclature-item-row";
+
+            div.onclick = () => {
+              input.value = opt.text;
+              input.nextElementSibling.value = opt.value;
+              input.closest("tr").querySelector("input[name='prices']").value = parseFloat(opt.dataset.price).toFixed(2);
+              dropdown.style.display = "none";
+              calculateLiveTotals();
+            };
+
+            // Синхронизация мыши с клавиатурой
+            div.onmouseenter = () => {
+              resetNomFocus(dropdown.querySelectorAll(".nomenclature-item-row"));
+              div.style.backgroundColor = "#ecf5ff";
+            };
+
             dropdown.appendChild(div);
           }
         });
+
         if (val.trim() !== "") {
-          const addDiv = document.createElement("div"); addDiv.className = "quick-add-opt";
+          const addDiv = document.createElement("div");
+          addDiv.className = "quick-add-opt nomenclature-item-row"; // Тоже даем класс
           addDiv.innerText = `+ Создать номенклатуру: "${input.value}"`;
-          addDiv.onclick = () => { activeNomTargetInput = input; document.getElementById("modalNomName").value = input.value; document.getElementById("nomenclatureModal").style.display = "flex"; dropdown.style.display = "none"; };
+
+          addDiv.onclick = () => {
+            activeNomTargetInput = input;
+            document.getElementById("modalNomName").value = input.value;
+            document.getElementById("nomenclatureModal").style.display = "flex";
+            dropdown.style.display = "none";
+          };
+
+          addDiv.onmouseenter = () => {
+            resetNomFocus(dropdown.querySelectorAll(".nomenclature-item-row"));
+            addDiv.style.backgroundColor = "#ecf5ff";
+          };
+
           dropdown.appendChild(addDiv);
         }
+
         dropdown.style.display = dropdown.children.length ? "block" : "none";
       });
+
+      // Перехват кнопок клавиатуры строго для текущей строки товара
+      input.addEventListener("keydown", (e) => {
+        let items = dropdown.querySelectorAll(".nomenclature-item-row");
+        if (!items.length) return;
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          currentFocus++;
+          setNomActive(items);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          currentFocus--;
+          setNomActive(items);
+        } else if (e.key === "Enter") {
+          if (currentFocus > -1 && items[currentFocus]) {
+            e.preventDefault(); // Блокируем отправку формы по Enter
+            items[currentFocus].click(); // Выполняем оригинальный div.onclick
+          }
+        }
+      });
+
+      function setNomActive(items) {
+        resetNomFocus(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+
+        items[currentFocus].style.backgroundColor = "#ecf5ff";
+        // Скроллим выпадающее окно к выбранной позиции, если она скрылась из виду
+        items[currentFocus].scrollIntoView({ block: "nearest" });
+      }
+
+      function resetNomFocus(items) {
+        items.forEach(item => item.style.backgroundColor = "transparent");
+      }
     });
   }
 

@@ -75,54 +75,46 @@
 <!-- Панель серого фильтра -->
 <div class="filter-bar">
     <div class="filter-group">
-        <!-- Панель фильтров с расширенным полем поиска товаров -->
         <form th:action="@{/}" method="get" id="filterForm" class="mb-3" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 15px !important; font-size: 13px; color: #333; width: auto; background: transparent;">
 
-            <!-- 1. Расширенный фильтр по Номенклатуре -->
-            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important; position: relative;">
+            <!-- 1. Фильтр по Номенклатуре (УВЕЛИЧИЛИ ОТСТУП СПРАВА ДО 30px) -->
+            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important; position: relative; margin-right: 30px !important;">
                 <span style="white-space: nowrap; color: #606266 !important;">Поиск по позиции:</span>
-                <input type="text"
-                       id="nomSearchInput"
-                       name="searchNom"
-                       th:value="${currentSearchNom}"
-                       placeholder="Введите наименование товара..."
-                       autocomplete="off"
-                       style="height: 26px !important; width: 320px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important; display: inline-block !important; margin: 0 !important;" />
-
-                <!-- Выпадающие подсказки (Ширина автоматически подстроилась под инпут) -->
-                <div id="nomSuggestions" style="position: absolute; left: 125px; top: 100%; width: 320px; z-index: 9999; background: white; border: 1px solid #dcdfe6; border-radius: 4px; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
+                <input type="text" id="nomSearchInput" name="searchNom" th:value="${currentSearchNom}" placeholder="Введите наименование товара..." autocomplete="off" style="height: 26px !important; width: 220px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important;" />
+                <div id="nomSuggestions" style="position: absolute; left: 125px; top: 100%; width: 220px; z-index: 9999; background: white; border: 1px solid #dcdfe6; border-radius: 4px; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
             </div>
 
-            <!-- 2. Фильтр по Контрагенту -->
-            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important;">
+            <!-- 2. Фильтр по Контрагенту (УВЕЛИЧИЛИ ОТСТУП СПРАВА ДО 30px) -->
+            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important; margin-right: 30px !important;">
                 <span style="white-space: nowrap; color: #606266 !important;">Контрагент:</span>
-                <select name="contractorId" id="contractorSelect" onchange="document.getElementById('filterForm').submit()" style="height: 26px !important; width: 160px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important; display: inline-block !important; background-color: #fff !important; margin: 0 !important; appearance: select; -webkit-appearance: select;">
+                <select name="contractorId" id="contractorSelect" onchange="document.getElementById('filterForm').submit()" style="height: 26px !important; width: 150px !important; font-size: 13px !important; padding: 2px 6px !important; border: 1px solid #ccc !important; border-radius: 3px !important; background-color: #fff !important; appearance: select; -webkit-appearance: select;">
                     <option value="">Все контрагенты</option>
-                    <option th:each="c : ${contractors}"
-                            th:value="${c.id}"
-                            th:text="${c.name}"
-                            th:selected="${c.id == currentContractorId}"></option>
+                    <option th:each="c : ${contractors}" th:value="${c.id}" th:text="${c.name}" th:selected="${c.id == currentContractorId}"></option>
                 </select>
             </div>
 
-            <!-- 3. Кнопка Сбросить -->
-            <a th:href="@{/}" style="height: 26px !important; padding: 2px 10px !important; font-size: 12px !important; background-color: #fff !important; border: 1px solid #ccc !important; color: #606266 !important; border-radius: 3px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 1px 1px rgba(0,0,0,.075) !important; white-space: nowrap !important; margin: 0 !important; cursor: pointer;">
+            <!-- 3. Фильтр по периоду отгрузки -->
+            <div style="display: inline-flex !important; align-items: center !important; gap: 4px !important;">
+                <span style="white-space: nowrap; color: #606266 !important;">Отгружено за период:</span>
+                <input type="date" name="startDate" th:value="${currentStartDate}" onchange="document.getElementById('filterForm').submit()" style="height: 26px !important; width: 130px !important; font-size: 13px !important; padding: 2px 4px !important; border: 1px solid #ccc !important; border-radius: 3px !important;" />
+                <span style="color: #606266;">—</span>
+                <input type="date" name="endDate" th:value="${currentEndDate}" onchange="document.getElementById('filterForm').submit()" style="height: 26px !important; width: 130px !important; font-size: 13px !important; padding: 2px 4px !important; border: 1px solid #ccc !important; border-radius: 3px !important;" />
+            </div>
+
+            <!-- 4. Кнопка Сбросить -->
+            <a th:href="@{/}" style="height: 26px !important; padding: 2px 10px !important; font-size: 12px !important; background-color: #fff !important; border: 1px solid #ccc !important; color: #333 !important; border-radius: 3px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 1px 1px rgba(0,0,0,.075) !important; white-space: nowrap !important; cursor: pointer; margin-right: 10px !important;">
                 Сбросить
             </a>
+
+            <!-- 5. Блок Итого -->
+            <div style="display: inline-flex !important; align-items: center !important; font-size: 13px; color: #606266; background-color: #f8f9fa; padding: 4px 10px; border-radius: 3px; border: 1px solid #ccc; height: 26px !important; white-space: nowrap !important;">
+                <span>Итого:&nbsp;</span>
+                <span style="color: #333;" th:text="${totalFilteredSum != null ? #numbers.formatDecimal(totalFilteredSum, 1, 'WHITESPACE', 2, 'POINT') + ' руб.' : '0.00 руб.'}">0.00 руб.</span>
+            </div>
         </form>
-
-
     </div>
-    <div class="filter-group">
-        <label>Организация:</label>
-        <select id="filterOrg" onchange="filterInvoices()">
-            <option value="">Все организации</option>
-            <option th:each="o : ${organizations}" th:value="${o.name}" th:text="${o.name}"></option>
-        </select>
-    </div>
-</div>
 <!-- Контейнер с таблицей документов -->
-<div class="table-container">
+<div class="table-responsive w-100" style="width: 100% !important;">
     <table id="invoiceTable">
         <thead>
         <tr>
@@ -204,63 +196,99 @@
         const input = document.getElementById('nomSearchInput');
         const dropdown = document.getElementById('nomSuggestions');
         const form = document.getElementById('filterForm');
+        let currentFocus = -1; // Индекс текущего выбранного элемента
 
         if (!input || !dropdown) return;
 
         input.addEventListener('input', () => {
-        const query = input.value.trim();
+            const query = input.value.trim();
+            currentFocus = -1; // Сбрасываем фокус при изменении текста
 
-        if (query.length < 2) {
-        dropdown.style.display = 'none';
-        return;
-    }
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
 
-        // ВАЖНО: Добавлен ведущий слэш '/' для обращения к корню API сервера
-        fetch('/api/nomenclatures/search?term=' + encodeURIComponent(query))
-        .then(res => {
-        if (!res.ok) throw new Error('Ошибка сервера: ' + res.status);
-        return res.json();
-    })
-        .then(data => {
-        dropdown.innerHTML = '';
+            fetch('/api/nomenclatures/search?term=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    if (!data || data.length === 0) {
+                        dropdown.style.display = 'none';
+                        return;
+                    }
 
-        if (!data || data.length === 0) {
-        dropdown.style.display = 'none';
-        return;
-    }
+                    data.forEach((item, index) => {
+                        const row = document.createElement('div');
+                        row.innerText = item.name;
+                        row.style.padding = '10px 12px';
+                        row.style.cursor = 'pointer';
+                        row.style.fontSize = '13px';
+                        row.style.borderBottom = '1px solid #f2f6fc';
+                        row.style.color = '#303133';
+                        row.className = 'suggestion-item'; // Класс для поиска элементов
 
-        data.forEach(item => {
-        const row = document.createElement('div');
-        row.innerText = item.name;
-        row.style.padding = '10px 12px';
-        row.style.cursor = 'pointer';
-        row.style.fontSize = '13px';
-        row.style.borderBottom = '1px solid #f2f6fc';
-        row.style.color = '#303133';
+                        row.onmouseenter = () => {
+                            removeActive(dropdown.querySelectorAll('.suggestion-item'));
+                            currentFocus = index;
+                            addActive(row);
+                        };
 
-        row.onmouseenter = () => row.style.backgroundColor = '#ecf5ff';
-        row.onmouseleave = () => row.style.backgroundColor = 'transparent';
+                        row.onclick = () => {
+                            input.value = item.name;
+                            dropdown.style.display = 'none';
+                            if (form) form.submit();
+                        };
+                        dropdown.appendChild(row);
+                    });
+                    dropdown.style.display = 'block';
+                });
+        });
 
-        row.onclick = () => {
-        input.value = item.name;
-        dropdown.style.display = 'none';
-        if (form) form.submit();
-    };
+        // Обработка нажатий клавиш клавиатуры
+        input.addEventListener('keydown', (e) => {
+            let items = dropdown.querySelectorAll('.suggestion-item');
+            if (!items.length) return;
 
-        dropdown.appendChild(row);
-    });
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentFocus++;
+                setActive(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentFocus--;
+                setActive(items);
+            } else if (e.key === 'Enter') {
+                if (currentFocus > -1 && items[currentFocus]) {
+                    e.preventDefault(); // Блокируем стандартную отправку пустой формы
+                    items[currentFocus].click(); // Имитируем клик по выбранному пункту
+                }
+            }
+        });
 
-        // Принудительно делаем блок видимым поверх остальных элементов
-        dropdown.style.display = 'block';
-    })
-        .catch(err => console.error('Ошибка загрузки подсказок:', err));
-    });
+        function setActive(items) {
+            if (!items) return false;
+            removeActive(items);
+            if (currentFocus >= items.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = items.length - 1;
+
+            addActive(items[currentFocus]);
+            // Автоматический скролл к элементу, если он выходит за рамки видимости
+            items[currentFocus].scrollIntoView({ block: 'nearest' });
+        }
+
+        function addActive(element) {
+            if (!element) return;
+            element.style.backgroundColor = '#ecf5ff';
+        }
+
+        function removeActive(items) {
+            items.forEach(item => item.style.backgroundColor = 'transparent');
+        }
 
         document.addEventListener('click', (e) => {
-        if (e.target !== input) {
-        dropdown.style.display = 'none';
-    }
-    });
+            if (e.target !== input) dropdown.style.display = 'none';
+        });
     });
 </script>
 </body>

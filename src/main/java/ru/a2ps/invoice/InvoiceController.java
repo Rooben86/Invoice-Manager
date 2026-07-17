@@ -28,14 +28,25 @@ public class InvoiceController {
     @GetMapping("/")
     public String viewDashboard(@RequestParam(value = "searchNom", required = false) String searchNom,
                                 @RequestParam(value = "contractorId", required = false) Long contractorId,
+                                @RequestParam(value = "startDate", required = false) String startDateStr,
+                                @RequestParam(value = "endDate", required = false) String endDateStr,
                                 Model model) {
 
-        // Вызываем обновленный метод поиска по тексту
-        List<Invoice> invoices = invoiceRepository.findFilteredInvoices(searchNom, contractorId);
+        java.time.LocalDate startDate = (startDateStr != null && !startDateStr.isEmpty()) ? java.time.LocalDate.parse(startDateStr) : null;
+        java.time.LocalDate endDate = (endDateStr != null && !endDateStr.isEmpty()) ? java.time.LocalDate.parse(endDateStr) : null;
+
+        List<Invoice> invoices = invoiceRepository.findFilteredInvoices(searchNom, contractorId, startDate, endDate);
+
+        java.math.BigDecimal totalFilteredSum = invoices.stream()
+                .map(inv -> inv.calculateInvoiceTotal() != null ? inv.calculateInvoiceTotal() : java.math.BigDecimal.ZERO)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
         model.addAttribute("invoices", invoices);
-        model.addAttribute("currentSearchNom", searchNom); // Передаем текст обратно в инпут
+        model.addAttribute("totalFilteredSum", totalFilteredSum);
+        model.addAttribute("currentSearchNom", searchNom);
         model.addAttribute("currentContractorId", contractorId);
+        model.addAttribute("currentStartDate", startDateStr); // Возвращаем строку для HTML input
+        model.addAttribute("currentEndDate", endDateStr);
         model.addAttribute("contractors", contractorRepository.findAll());
         model.addAttribute("organizations", organizationRepository.findAll());
 
