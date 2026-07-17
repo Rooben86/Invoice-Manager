@@ -62,7 +62,12 @@
     <div style="padding: 0 15px; font-weight: bold; border-bottom: 3px solid #007bff; height: 100%; display: flex; align-items: center; color: white;">Продажи</div>
     <a th:href="@{/contractors}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; line-height: 45px;">Контрагенты</a>
     <a th:href="@{/nomenclatures}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; line-height: 45px;">Номенклатура</a>
-    <a th:href="@{/organization/edit}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; margin-left: auto; line-height: 45px;">⚙️ Настройки Поставщика</a>
+    <a th:href="@{/organization/edit}" style="color: #cbd5e0; text-decoration: none; padding: 0 15px; margin-left: auto;
+    line-height: 45px;">⚙️ Настройки Поставщика</a>
+    <form action="/logout" method="post" id="logoutForm" style="margin: 0; display: inline;">
+        <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" style="color: #cbd5e0;
+        text-decoration: none; padding: 0 15px; line-height: 45px;">⎋ Выйти</a>
+    </form>
 </div>
 
 <!-- Панель действий -->
