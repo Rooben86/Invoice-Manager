@@ -26,14 +26,18 @@ public class MyOrganization {
 
     private String bic;       // БИК
 
-    @Column(name = "image_stamp_path")
-    private String imageStampPath; // Путь к изображению печати
+    // Вместо старых String imageStampPath, imageSignPath, stampPath, signaturePath:
 
-    @Column(name = "image_sign_path")
-    private String imageSignPath;  // Путь к изображению подписи
+    @Lob
+    @org.hibernate.annotations.JdbcType(org.hibernate.type.descriptor.jdbc.VarbinaryJdbcType.class)
+    @Column(name = "stamp_data", columnDefinition = "BYTEA")
+    private byte[] stampData; // Бинарные данные печати
 
-    private String stampPath;
-    private String signaturePath;
+    @Lob
+    @org.hibernate.annotations.JdbcType(org.hibernate.type.descriptor.jdbc.VarbinaryJdbcType.class)
+    @Column(name = "signature_data", columnDefinition = "BYTEA")
+    private byte[] signatureData; // Бинарные данные подписи
+
     private String corrAccount; // Корреспондентский счет
     private String address;     // Юридический адрес
     private String phone;       // Телефон компании
@@ -47,15 +51,15 @@ public class MyOrganization {
 
     // Полный конструктор для удобной инициализации
     public MyOrganization(String name, String taxNumber, String kpp, String bankName,
-                          String checkingAccount, String bic, String imageStampPath, String imageSignPath) {
+                          String checkingAccount, String bic, byte[] stampData, byte[] signatureData) {
         this.name = name;
         this.taxNumber = taxNumber;
         this.kpp = kpp;
         this.bankName = bankName;
         this.checkingAccount = checkingAccount;
         this.bic = bic;
-        this.imageStampPath = imageStampPath;
-        this.imageSignPath = imageSignPath;
+        this.stampData = stampData;
+        this.signatureData = signatureData;
     }
 
     // Геттеры и сеттеры
@@ -80,17 +84,12 @@ public class MyOrganization {
     public String getBic() { return bic; }
     public void setBic(String bic) { this.bic = bic; }
 
-    public String getImageStampPath() { return imageStampPath; }
-    public void setImageStampPath(String imageStampPath) { this.imageStampPath = imageStampPath; }
+    public byte[] getStampData() { return stampData; }
+    public void setStampData(byte[] stampData) { this.stampData = stampData; }
 
-    public String getImageSignPath() { return imageSignPath; }
-    public void setImageSignPath(String imageSignPath) { this.imageSignPath = imageSignPath; }
+    public byte[] getSignatureData() { return signatureData; }
+    public void setSignatureData(byte[] signatureData) { this.signatureData = signatureData; }
 
-    public String getStampPath() { return stampPath; }
-    public void setStampPath(String stampPath) { this.stampPath = stampPath; }
-
-    public String getSignaturePath() { return signaturePath; }
-    public void setSignaturePath(String signaturePath) { this.signaturePath = signaturePath; }
     public String getCorrAccount() { return corrAccount; }
     public void setCorrAccount(String corrAccount) { this.corrAccount = corrAccount; }
     public String getAddress() { return address; }
@@ -102,4 +101,13 @@ public class MyOrganization {
     public String getCfoName() { return cfoName; }
     public void setCfoName(String cfoName) { this.cfoName = cfoName; }
 
+    public String getStampBase64() {
+        if (this.stampData == null) return "";
+        return "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(this.stampData);
+    }
+
+    public String getSignatureBase64() {
+        if (this.signatureData == null) return "";
+        return "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(this.signatureData);
+    }
 }

@@ -1,5 +1,6 @@
 package ru.a2ps.invoice;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,8 @@ import java.util.Map;
 @Controller
 public class InvoiceController {
 
+    @Autowired
+    private org.thymeleaf.spring6.SpringTemplateEngine templateEngine;
     private final MyOrganizationRepository organizationRepository;
     private final ContractorRepository contractorRepository;
     private final NomenclatureRepository nomenclatureRepository;
@@ -197,20 +200,12 @@ public class InvoiceController {
             context.setVariable("vat", vat);
             context.setVariable("totalInWords", totalInWords);
 
-            org.thymeleaf.spring6.SpringTemplateEngine templateEngine = new org.thymeleaf.spring6.SpringTemplateEngine();
-            org.thymeleaf.templateresolver.ClassLoaderTemplateResolver templateResolver = new org.thymeleaf.templateresolver.ClassLoaderTemplateResolver();
-            templateResolver.setPrefix("templates/");
-            templateResolver.setSuffix(".html");
-            templateResolver.setTemplateMode(org.thymeleaf.templatemode.TemplateMode.HTML);
-            templateResolver.setCharacterEncoding("UTF-8");
-            templateEngine.setTemplateResolver(templateResolver);
-
             String htmlContent = templateEngine.process("invoice-pdf", context);
 
             response.setContentType("application/pdf");
             response.setHeader("Content-Disposition", "inline; filename=Invoice_" + invoice.getInvoiceNumber() + ".pdf");
 
-            // 5. Рендеринг Flying Saucer с принудительной подстановкой динамических картинок
+            // 5. Рендеринг Flying Saucer с подстановкой Base64-картинок из PostgreSQL
             try (java.io.OutputStream os = response.getOutputStream()) {
                 org.xhtmlrenderer.pdf.ITextRenderer renderer = new org.xhtmlrenderer.pdf.ITextRenderer();
 
@@ -218,38 +213,28 @@ public class InvoiceController {
                     renderer.getFontResolver().addFont("templates/fonts/Arial.ttf", "Identity-H", true);
                 }
 
-                // Передаем HTML-контент в движок
+                MyOrganization company = invoice.getOrganization();
+
+                // Получаем Base64 строки картинок (эти методы getStampBase64/getSignatureBase64 мы добавили в класс MyOrganization)
+                String stampBase64 = company.getStampBase64();
+                String signatureBase64 = company.getSignatureBase64();
+
+                // Прямо в HTML-тексте подменяем маркеры на готовые строки Base64
+                if (!stampBase64.isEmpty()) {
+                    htmlContent = htmlContent.replace("src=\"org-stamp\"", "src=\"" + stampBase64 + "\"");
+                }
+                if (!signatureBase64.isEmpty()) {
+                    htmlContent = htmlContent.replace("src=\"boss-sig\"", "src=\"" + signatureBase64 + "\"");
+                    htmlContent = htmlContent.replace("src=\"book-sig\"", "src=\"" + signatureBase64 + "\"");
+                }
+
                 String baseUrl = getClass().getClassLoader().getResource("").toString();
                 renderer.setDocumentFromString(htmlContent, baseUrl);
-
-                // ХАК ДЛЯ MAC: Принудительно связываем кодовые имена картинок с файлами из PostgreSQL настроек юрлица
-                String rawStamp = invoice.getOrganization().getStampPath();
-                String rawSig = invoice.getOrganization().getSignaturePath();
-
-                // Если пути не заданы, берем дефолтные файлы
-                String stampPath = (rawStamp != null) ? rawStamp : "static/stamp.png";
-                String signaturePath = (rawSig != null) ? rawSig : "static/signature.png";
-
-                // Загружаем файлы картинок в память рендерера
-                java.net.URL stampUrl = getClass().getClassLoader().getResource(stampPath);
-                java.net.URL sigUrl = getClass().getClassLoader().getResource(signaturePath);
-
-                if (stampUrl != null) {
-                    renderer.getSharedContext().getUserAgentCallback().setBaseURL(stampUrl.toString());
-                    htmlContent = htmlContent.replace("src=\"org-stamp\"", "src=\"" + stampUrl.toString() + "\"");
-                }
-                if (sigUrl != null) {
-                    htmlContent = htmlContent.replace("src=\"boss-sig\"", "src=\"" + sigUrl.toString() + "\"");
-                    htmlContent = htmlContent.replace("src=\"book-sig\"", "src=\"" + sigUrl.toString() + "\"");
-                }
-
-                // Перезаписываем документ с уже вшитыми полными путями к новым файлам
-                renderer.setDocumentFromString(htmlContent, baseUrl);
-
                 renderer.layout();
                 renderer.createPDF(os);
                 os.flush();
             }
+
         } catch (Exception e) {
             System.err.println("❌ Ошибка во время генерации PDF документа:");
             e.printStackTrace();
@@ -333,28 +318,29 @@ public class InvoiceController {
         org.setCeoName(ceoName);
         org.setCfoName(cfoName);
 
-        // Папка на Mac для сохранения картинок внутри ресурсов
-        String uploadDir = new java.io.File("src/main/resources/static/").getAbsolutePath();
-
         if (stampFile != null && !stampFile.isEmpty()) {
-            String fileName = "stamp_" + System.currentTimeMillis() + ".png";
-            stampFile.transferTo(new java.io.File(uploadDir + "/" + fileName));
-            org.setStampPath("static/" + fileName);
-        } else if (org.getStampPath() == null) {
-            org.setStampPath("static/stamp.png");
+            org.setStampData(stampFile.getBytes());
+        } else if (org.getStampData() == null) {
+            try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("static/stamp.png")) {
+                if (is != null) {
+                    org.setStampData(is.readAllBytes());
+                }
+            }
         }
 
         if (signatureFile != null && !signatureFile.isEmpty()) {
-            String fileName = "sig_" + System.currentTimeMillis() + ".png";
-            signatureFile.transferTo(new java.io.File(uploadDir + "/" + fileName));
-            org.setSignaturePath("static/" + fileName);
-        } else if (org.getSignaturePath() == null) {
-            org.setSignaturePath("static/signature.png");
+            org.setSignatureData(signatureFile.getBytes());
+        } else if (org.getSignatureData() == null) {
+            try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("static/signature.png")) {
+                if (is != null) {
+                    org.setSignatureData(is.readAllBytes());
+                }
+            }
         }
 
         MyOrganization savedOrg = organizationRepository.save(org);
         model.addAttribute("org", savedOrg);
-        model.addAttribute("successMessage", "Все реквизиты и файлы факсимиле успешно обновлены!");
+        model.addAttribute("successMessage", "Все реквизиты и файлы факсимиле успешно обновлены в БД!");
         return "organization-edit";
     }
 
@@ -436,4 +422,3 @@ public class InvoiceController {
         }
     }
 }
-
