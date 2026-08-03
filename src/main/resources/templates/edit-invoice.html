@@ -172,8 +172,15 @@
     <div class="modal-box">
         <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px;">Новая позиция каталога</h3>
         <div class="form-group"><label>Наименование:</label><input type="text" id="modalNomName" style="width:100%;" /></div>
-        <div class="form-group" style="margin-top: 10px;"><label>Ед. изм.:</label><select id="modalNomUnit" style="width:100%;" onchange="toggleCustomUnit(this)"><option value="шт">шт</option><option value="м2">м2</option>
-            <option value="куб.м">куб.м</option><option value="лист">лист</option><option value="кг">кг</option><option value="рулон">рулон</option><option value="упак">рулон</option>
+        <div class="form-group" style="margin-top: 10px;"><label>Ед. изм.:</label><select id="modalNomUnit" style="width:100%;" onchange="toggleCustomUnit(this)">
+            <option value="шт">шт</option>
+            <option value="м2">м2</option>
+            <option value="куб.м">куб.м</option>
+            <option value="лист">лист</option>
+            <option value="кг">кг</option>
+            <option value="рулон">рулон</option>
+            <option value="упак">упак</option>
+            <option value="м">м</option>
             <option value="CUSTOM">+ Своя...</option></select></div>
         <div class="form-group" id="customUnitWrapper" style="margin-top: 10px; display: none;"><label>Введите ед. изм.:</label><input type="text" id="modalCustomUnit" placeholder="уп" style="width:100%;" /></div>
         <div style="margin-top: 20px; display: flex; justify-content: space-between;"><button type="button" class="btn btn-secondary" onclick="closeModal('nomenclatureModal')">Отмена</button><button type="button" class="btn btn-success" onclick="submitQuickNomenclature()">Внести</button></div>
