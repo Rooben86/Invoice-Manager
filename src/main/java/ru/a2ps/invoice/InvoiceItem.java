@@ -19,7 +19,7 @@ public class InvoiceItem {
     @JoinColumn(name = "nomenclature_id", nullable = false)
     private Nomenclature nomenclature;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(nullable = false, precision = 15, scale = 3)
     private BigDecimal quantity;
 
     @Column(nullable = false, precision = 15, scale = 2)

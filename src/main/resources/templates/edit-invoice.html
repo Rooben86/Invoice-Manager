@@ -121,7 +121,7 @@
                         <div class="dropdown-options nominal-drop"></div>
                     </div>
                 </td>
-                <td><input type="number" step="0.01" name="quantities" th:value="${item.quantity != null} ? ${item.quantity} : '1.00'" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
+                <td><input type="number" step="0.001" name="quantities" th:value="${item.quantity != null} ? ${item.quantity} : '1'" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
                 <td><input type="number" step="0.01" name="prices" th:value="${item.price != null} ? ${item.price} : '0.00'" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
                 <td class="row-total" style="vertical-align: middle; font-weight: bold; color: #303133; text-align: right; padding-right: 10px;">
                     <span th:text="${item.quantity != null && item.price != null ? #numbers.formatDecimal(item.quantity * item.price, 1, 'WHITESPACE', 2, 'POINT') + ' руб.' : '0.00 руб.'}">0.00 руб.</span>
@@ -181,6 +181,7 @@
             <option value="рулон">рулон</option>
             <option value="упак">упак</option>
             <option value="м">м</option>
+            <option value="пар">пар</option>
             <option value="CUSTOM">+ Своя...</option></select></div>
         <div class="form-group" id="customUnitWrapper" style="margin-top: 10px; display: none;"><label>Введите ед. изм.:</label><input type="text" id="modalCustomUnit" placeholder="уп" style="width:100%;" /></div>
         <div style="margin-top: 20px; display: flex; justify-content: space-between;"><button type="button" class="btn btn-secondary" onclick="closeModal('nomenclatureModal')">Отмена</button><button type="button" class="btn btn-success" onclick="submitQuickNomenclature()">Внести</button></div>
@@ -272,7 +273,7 @@
           <div class="dropdown-options rounded nominal-drop"></div>
         </div>
       </td>
-      <td><input type="number" step="0.01" name="quantities" value="1.00" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
+      <td><input type="number" step="0.001" name="quantities" value="1" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
       <td><input type="number" step="0.01" name="prices" value="0.00" class="form-control" required style="width:100%;" oninput="calculateLiveTotals()" /></td>
       <!-- ДОБАВЛЯЕМ СЮДА ЯЧЕЙКУ СУММЫ ДЛЯ НОВОЙ СТРОКИ -->
       <td class="row-total" style="vertical-align: middle; font-weight: bold; color: #303133; text-align: right; padding-right: 15px;">

@@ -177,10 +177,10 @@
   <tr th:each="item, stat : ${invoice.items}">
     <td class="cell-center" th:text="${stat.count}">1</td>
     <td class="cell-left" th:text="${item.nomenclature.name}">Товар</td>
-    <td class="cell-right" th:text="${#numbers.formatDecimal(item.price, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
-    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity, 1, 'NONE', 0, 'POINT')}">1</td>
+    <td class="cell-right" th:text="${item.price != null ? T(java.lang.String).format('%,.2f', item.price).replaceAll(',00$', '').replace('.', ',') : '0'}">0</td>
+    <td class="cell-right" th:text="${item.quantity != null ? item.quantity.stripTrailingZeros().toPlainString().replace('.', ',') : '0'}">1</td>
     <td class="cell-center" th:text="${item.nomenclature.unit}">шт</td>
-    <td class="cell-right" th:text="${#numbers.formatDecimal(item.quantity * item.price, 1, 'WHITESPACE', 2, 'COMMA')}">0,00</td>
+    <td class="cell-right" th:text="${item.price != null and item.quantity != null ? T(java.lang.String).format('%,.2f', item.price * item.quantity).replaceAll(',00$', '').replace('.', ',') : '0'}">0</td>
   </tr>
   </tbody>
 </table>
