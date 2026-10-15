@@ -187,8 +187,21 @@ public class InvoiceController {
                     total = total.add(item.getQuantity().multiply(item.getPrice()));
                 }
             }
-            java.math.BigDecimal vat = total.multiply(new java.math.BigDecimal("22"))
-                    .divide(new java.math.BigDecimal("122"), 2, java.math.RoundingMode.HALF_UP);
+
+            java.math.BigDecimal vat = java.math.BigDecimal.ZERO;
+            for (InvoiceItem item : invoice.getItems()) {
+                if (item.getQuantity() != null && item.getPrice() != null) {
+                    java.math.BigDecimal lineTotal = item.getQuantity()
+                            .multiply(item.getPrice())
+                            .setScale(2, java.math.RoundingMode.HALF_UP);
+
+                    java.math.BigDecimal lineVat = lineTotal
+                            .multiply(new java.math.BigDecimal("22"))
+                            .divide(new java.math.BigDecimal("122"), 2, java.math.RoundingMode.HALF_UP);
+
+                    vat = vat.add(lineVat);
+                }
+            }
 
             long rubles = total.longValue();
             int kopecks = total.subtract(java.math.BigDecimal.valueOf(rubles)).multiply(java.math.BigDecimal.valueOf(100)).intValue();
