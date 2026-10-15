@@ -213,6 +213,7 @@
 
   function calculateLiveTotals() {
     let grandTotal = 0;
+    let vatTotalCents = 0;
 
     document.querySelectorAll(".item-row").forEach(row => {
       // Находим инпуты количества и цены внутри текущей строки
@@ -224,6 +225,8 @@
         let qty = parseFloat(qtyInput.value.replace(',', '.')) || 0;
         let price = parseFloat(priceInput.value.replace(',', '.')) || 0;
         let rowSum = qty * price;
+    const roundedRowSum = Math.round(rowSum * 100) / 100;
+    vatTotalCents += Math.round((roundedRowSum * 22 / 122) * 100);
 
         // Накапливаем общий итог по счету
         grandTotal += rowSum;
@@ -236,7 +239,7 @@
     });
 
     // Пересчет общего итога внизу счета (ваш старый код остается без изменений)
-    let vatTotal = grandTotal * 22 / 122;
+    let vatTotal = vatTotalCents / 100;
     document.getElementById("liveGrandTotal").innerText = grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
     document.getElementById("liveVatTotal").innerText = vatTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " руб.";
   }
